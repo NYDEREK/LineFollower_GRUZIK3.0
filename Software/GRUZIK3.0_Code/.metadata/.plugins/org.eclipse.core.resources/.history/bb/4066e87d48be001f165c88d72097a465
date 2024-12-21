@@ -1,0 +1,38 @@
+/*
+ * motor.h
+ *
+ *  Created on: 19 gru 2024
+ *      Author: Szymon
+ */
+
+#ifndef INC_MOTOR_H_
+#define INC_MOTOR_H_
+
+typedef struct
+{
+	float set_speed;
+	float current_speed;
+	float speed;
+
+	float error = 0;
+	float Errors[10] = {0,0,0,0,0,0,0,0,0,0};
+	float Error_sum = 0;
+
+	float ki;
+	float kp;
+
+	float P =  set_speed - current_speed;
+
+	for (int i = 0; i < 5; i++)
+	{
+		Error_sum +=  Errors[i];
+	}
+
+	float I = Error_sum;
+
+	speed = P * kp + I * ki;
+
+
+}motor_t;
+
+#endif /* INC_MOTOR_H_ */

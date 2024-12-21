@@ -1,0 +1,48 @@
+/*
+ * motor.c
+ *
+ *  Created on: 19 gru 2024
+ *      Author: Szymon
+ */
+
+#include "main.h"
+#include "motor.h"
+
+void Motor_CalculateSpeed(motor_t *motor)
+{
+    //How many impulses did we get ?
+	uint16_t impulses = motor->EncoderValue - motor->EncoderPreviousValue;
+    //How many times motor has rotated ?
+	if(motor->ImpulsesPerRotation != 0)
+	{
+		float NumberOfRotations = impulses * (1 / motor->ImpulsesPerRotation);
+
+	}
+	//Rotations per minute based on period
+	if(motor->period != 0)
+	{
+		motor->RPM = (NumberOfRotations / motor->period) / (60 / motor->period); // rotations per period / "thing to that converts it to PER MINUTE"
+	}
+}
+
+void Motor_Init(motor_t *motor, float Kp, float Ki, uint16_t ImpulsesPerRotation, float period)
+{
+	motor->kp = Kp;
+	motor->ki = Ki;
+	motor->ImpulsesPerRotation = ImpulsesPerRotation;
+	motor->period = period;
+}
+
+void PI_Loop(motor_t *motor)
+{
+	motor->P =  motor->set_speed - motor->current_speed;
+
+	for (int i = 0; i < 5; i++)
+	{
+		motor->Error_sum +=  motor->Errors[i];
+	}
+
+	motor->I = motor->Error_sum;
+
+	motor->speed = (motor->P * motor->kp) + (motor->I *motor->ki);
+}

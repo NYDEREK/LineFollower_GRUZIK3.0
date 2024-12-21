@@ -1,0 +1,14 @@
+/*
+ * motor.c
+ *
+ *  Created on: 19 gru 2024
+ *      Author: Szymon
+ */
+
+#include "main.h"
+#include "motor.h"
+
+void MotorInit(motor_t *motor, float Kp, float Ki)
+{
+	motor->
+}

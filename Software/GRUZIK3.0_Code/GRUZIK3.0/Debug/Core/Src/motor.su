@@ -1,0 +1,3 @@
+../Core/Src/motor.c:11:6:Motor_CalculateSpeed	24	static
+../Core/Src/motor.c:29:6:Motor_Init	32	static
+../Core/Src/motor.c:37:6:PI_Loop	24	static

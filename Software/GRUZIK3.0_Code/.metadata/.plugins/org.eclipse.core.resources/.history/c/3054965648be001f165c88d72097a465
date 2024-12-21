@@ -1,0 +1,38 @@
+/*
+ * motor.h
+ *
+ *  Created on: 19 gru 2024
+ *      Author: Szymon
+ */
+
+#ifndef INC_MOTOR_H_
+#define INC_MOTOR_H_
+
+typedef struct
+{
+	int set_speed = 0;
+	int current_speed = 0;
+	int speed;
+
+	int error = 0;
+	int Errors[10] = {0,0,0,0,0,0,0,0,0,0};
+	int Error_sum = 0;
+
+	int ki;
+	int kp;
+
+	int P =  set_speed - current_speed;
+
+	for ( int i = 0; i < 5; i++)
+	{
+		Error_sum +=  Errors[i];
+	}
+
+	int I = Error_sum;
+
+	speed = P * kp + I * ki;
+
+
+}motor_t;
+
+#endif /* INC_MOTOR_H_ */

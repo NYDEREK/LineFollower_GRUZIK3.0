@@ -1,0 +1,40 @@
+/*
+ * motor.c
+ *
+ *  Created on: 19 gru 2024
+ *      Author: Szymon
+ */
+
+#include "main.h"
+#include "motor.h"
+
+//void Motor_CalculateSpeed(motor_t *motor)
+//{
+//	//predkosc kola w jednym odczycie = ilosc impulsow * ilosc obortow na impuls * czas(0.01s)
+//
+//
+//	uint16_t impulses = motor->EncoderValue - motor->EncoderPreviousValue;
+//
+//	float NumberOfRotations = impulses * (1 / motor->ImpulsesPerRotation);
+//
+//}
+
+void Motor_Init(motor_t *motor, float Kp, float Ki)
+{
+	motor->kp = Kp;
+	motor->ki = Ki;
+}
+
+void PI_Loop(motor_t *motor)
+{
+	motor->P =  motor->set_speed - motor->current_speed;
+
+	for (int i = 0; i < 5; i++)
+	{
+		motor->Error_sum +=  motor->Errors[i];
+	}
+
+	motor->I = motor->Error_sum;
+
+	motor->speed = (motor->P * motor->kp) + (motor->I *motor->ki);
+}
