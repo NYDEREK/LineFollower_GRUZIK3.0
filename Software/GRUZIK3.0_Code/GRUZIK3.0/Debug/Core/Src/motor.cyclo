@@ -1,0 +1,4 @@
+../Core/Src/motor.c:11:13:Motor_SavePreviousRPMs	3
+../Core/Src/motor.c:26:6:Motor_CalculateSpeed	3
+../Core/Src/motor.c:64:6:Motor_Init	1
+../Core/Src/motor.c:70:6:PI_Loop	3

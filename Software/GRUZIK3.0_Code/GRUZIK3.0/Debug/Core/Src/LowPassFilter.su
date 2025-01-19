@@ -1,0 +1,2 @@
+../Core/Src/LowPassFilter.c:10:6:LowPassFilter_Init	16	static
+../Core/Src/LowPassFilter.c:14:7:LowPassFilter_Update	16	static

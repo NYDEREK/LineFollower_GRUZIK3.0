@@ -1,4 +1,6 @@
 "./Core/Src/Line_Follower.o"
+"./Core/Src/LowPassFilter.o"
+"./Core/Src/Lsm6ds3.o"
 "./Core/Src/RingBuffer.o"
 "./Core/Src/SimpleParser.o"
 "./Core/Src/adc.o"

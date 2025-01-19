@@ -1,0 +1,7 @@
+../Core/Src/Lsm6ds3.c:15:9:readRegister	40	static
+../Core/Src/Lsm6ds3.c:23:6:writeRegister	32	static
+../Core/Src/Lsm6ds3.c:27:6:readRegisters	72	dynamic
+../Core/Src/Lsm6ds3.c:34:9:LSM_Init	24	static
+../Core/Src/Lsm6ds3.c:81:6:LSM_readGyroscope	48	static
+../Core/Src/Lsm6ds3.c:110:6:LSM_readAcceleration	48	static
+../Core/Src/Lsm6ds3.c:132:6:LSM_readTemperature	40	static

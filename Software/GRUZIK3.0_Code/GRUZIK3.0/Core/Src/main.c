@@ -36,6 +36,8 @@
 #include "RingBuffer.h"
 #include "SimpleParser.h"
 #include "motor.h"
+#include "LowPassFilter.h"
+#include "Lsm6ds3.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -60,15 +62,18 @@
 	#define false 0;
 	#define ENDLINE '\n'
 
-	/*Motor directions*/
-	#define FORWARD_L 1
-	#define BACKWARD_L 0
-	#define FORWARD_R 1
-	#define BACKWARD_R 0
-
 	/*Sensor*/
 	#define SENSOR_SCALE 1 // sensor values multiplier -- for tests only
 
+
+	/*IMU*/
+	#define YAW_MEASUREMENT_PERIOD 0.001f//s
+	Lsm6ds3_t lsm6ds3;
+	float Yaw;
+
+	/*Encoders*/
+	#define PI_MOTOR_SPEED_REGULATION 1
+	#define LOW_PASS_FILTER_ALPHA 0.7
 	LineFollower_t GRUZIK;
 	motor_t Motor_L;
 	motor_t Motor_R;
@@ -185,13 +190,21 @@ int main(void)
     HAL_TIM_Encoder_Start(&htim4, TIM_CHANNEL_ALL); // Left Encoder
     HAL_TIM_Encoder_Start(&htim1, TIM_CHANNEL_ALL); // Right Encoder
 
-    Motor_Init(&Motor_R, 0.1, 0.1, 10000, 0.01);
-    Motor_Init(&Motor_L, 0.1, 0.1, 10000, 0.01);
+    //         Motor     KP    KI
+    Motor_Init(&Motor_R, 0.1, 0.2);//0.5 0.5
+    Motor_Init(&Motor_L, 0.1, 0.2);
+    LowPassFilter_Init(&Motor_R.EncoderRpmFilter, LOW_PASS_FILTER_ALPHA);
+    LowPassFilter_Init(&Motor_L.EncoderRpmFilter, LOW_PASS_FILTER_ALPHA);
+    LowPassFilter_Init(&Motor_L.MetersPerSecondLPF, LOW_PASS_FILTER_ALPHA);
+    LowPassFilter_Init(&Motor_R.MetersPerSecondLPF, LOW_PASS_FILTER_ALPHA);
 
 	/*Start timers and PWM on channels*/
 	HAL_TIM_Base_Start_IT(&htim3);
 	HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);//right pwm
 	HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_4);//left pwm
+
+	/*IMU initialization*/
+	LSM_Init(&lsm6ds3, &hi2c3);
 
     /*LED diodes initial set*/
     HAL_GPIO_WritePin(LED_4_GPIO_Port, LED_4_Pin, GPIO_PIN_SET);
@@ -291,7 +304,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
     	HAL_UART_Receive_IT(&hlpuart1,&RxData, 1);
 	}
 }
-/*Encoders reading at 100Hz */
+/*Encoders reading at 1KHz */
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
 	if(htim->Instance == TIM5)
@@ -305,6 +318,19 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
 	    Motor_CalculateSpeed(&Motor_R);
 	    Motor_CalculateSpeed(&Motor_L);
+
+	    /*integration of Gyroscope data for Z axis*/
+	    LSM_readGyroscope(&lsm6ds3);
+	    Yaw = Yaw + lsm6ds3.RawGz * YAW_MEASUREMENT_PERIOD;
+
+	    if(Yaw > 180)
+	    {
+	    	Yaw = -180;
+	    }
+	    if(Yaw < -180)
+	    {
+	    	Yaw = 180;
+	    }
 	}
 }
 /*Functions*/
@@ -336,31 +362,76 @@ void Set_Pin_Input (GPIO_TypeDef *GPIOx, uint16_t GPIO_Pin)
 void motor_control (double pos_right, double pos_left)
 
 {
-	if (pos_left < 0 )
+	#ifdef PI_MOTOR_SPEED_REGULATION
 	{
-		__HAL_TIM_SET_COMPARE (&htim2, TIM_CHANNEL_4, (uint32_t)((ARR*pos_left*-1) * GRUZIK.Speed_level));//PWM_L
-		HAL_GPIO_WritePin(Motor_L_A_GPIO_Port, Motor_L_B_Pin, GPIO_PIN_SET);
-		HAL_GPIO_WritePin(Motor_L_B_GPIO_Port, Motor_L_A_Pin, GPIO_PIN_RESET);
+		if (pos_left < 0 )
+		{
+			Motor_L.set_speed = pos_left * -1;
+			PI_Loop(&Motor_L);
 
+			__HAL_TIM_SET_COMPARE (&htim2, TIM_CHANNEL_4, (uint32_t)((ARR*Motor_L.speed) * GRUZIK.Speed_level));//PWM_L
+			HAL_GPIO_WritePin(Motor_L_A_GPIO_Port, Motor_L_B_Pin, GPIO_PIN_SET);
+			HAL_GPIO_WritePin(Motor_L_B_GPIO_Port, Motor_L_A_Pin, GPIO_PIN_RESET);
+
+		}
+		else
+		{
+			Motor_L.set_speed = pos_left;
+			PI_Loop(&Motor_L);
+
+			__HAL_TIM_SET_COMPARE (&htim2, TIM_CHANNEL_4, (uint32_t)((ARR*Motor_L.speed) * GRUZIK.Speed_level));//PWM_L
+			HAL_GPIO_WritePin(Motor_L_A_GPIO_Port, Motor_L_B_Pin, GPIO_PIN_RESET);
+			HAL_GPIO_WritePin(Motor_L_B_GPIO_Port, Motor_L_A_Pin, GPIO_PIN_SET);
+		}
+		if (pos_right < 0 )
+		{
+			Motor_R.set_speed = pos_right * -1;
+			PI_Loop(&Motor_R);
+
+			__HAL_TIM_SET_COMPARE (&htim2, TIM_CHANNEL_1, (uint32_t)((ARR*Motor_R.speed) * GRUZIK.Speed_level));//PWM_R
+			HAL_GPIO_WritePin(Motor_R_A_GPIO_Port, Motor_R_A_Pin, GPIO_PIN_SET);
+			HAL_GPIO_WritePin(Motor_R_B_GPIO_Port, Motor_R_B_Pin, GPIO_PIN_RESET);
+		}
+		else
+		{
+			Motor_R.set_speed = pos_right;
+			PI_Loop(&Motor_R);
+
+			__HAL_TIM_SET_COMPARE (&htim2, TIM_CHANNEL_1, (uint32_t)((ARR*Motor_R.speed) * GRUZIK.Speed_level));//PWM_R
+			HAL_GPIO_WritePin(Motor_R_A_GPIO_Port, Motor_R_A_Pin, GPIO_PIN_RESET);
+			HAL_GPIO_WritePin(Motor_R_B_GPIO_Port, Motor_R_B_Pin, GPIO_PIN_SET);
+		}
 	}
-	else
+	#else
 	{
-		__HAL_TIM_SET_COMPARE (&htim2, TIM_CHANNEL_4, (uint32_t)((ARR*pos_left) * GRUZIK.Speed_level));//PWM_L
-		HAL_GPIO_WritePin(Motor_L_A_GPIO_Port, Motor_L_B_Pin, GPIO_PIN_RESET);
-		HAL_GPIO_WritePin(Motor_L_B_GPIO_Port, Motor_L_A_Pin, GPIO_PIN_SET);
+		if (pos_left < 0 )
+		{
+			__HAL_TIM_SET_COMPARE (&htim2, TIM_CHANNEL_4, (uint32_t)((ARR*pos_left*-1) * GRUZIK.Speed_level));//PWM_L
+			HAL_GPIO_WritePin(Motor_L_A_GPIO_Port, Motor_L_B_Pin, GPIO_PIN_SET);
+			HAL_GPIO_WritePin(Motor_L_B_GPIO_Port, Motor_L_A_Pin, GPIO_PIN_RESET);
+
+		}
+		else
+		{
+			__HAL_TIM_SET_COMPARE (&htim2, TIM_CHANNEL_4, (uint32_t)((ARR*pos_left) * GRUZIK.Speed_level));//PWM_L
+			HAL_GPIO_WritePin(Motor_L_A_GPIO_Port, Motor_L_B_Pin, GPIO_PIN_RESET);
+			HAL_GPIO_WritePin(Motor_L_B_GPIO_Port, Motor_L_A_Pin, GPIO_PIN_SET);
+		}
+		if (pos_right < 0 )
+		{
+			__HAL_TIM_SET_COMPARE (&htim2, TIM_CHANNEL_1, (uint32_t)((ARR*pos_right* -1) * GRUZIK.Speed_level));//PWM_R
+			HAL_GPIO_WritePin(Motor_R_A_GPIO_Port, Motor_R_A_Pin, GPIO_PIN_SET);
+			HAL_GPIO_WritePin(Motor_R_B_GPIO_Port, Motor_R_B_Pin, GPIO_PIN_RESET);
+		}
+		else
+		{
+			__HAL_TIM_SET_COMPARE (&htim2, TIM_CHANNEL_1, (uint32_t)((ARR*pos_right) * GRUZIK.Speed_level));//PWM_R
+			HAL_GPIO_WritePin(Motor_R_A_GPIO_Port, Motor_R_A_Pin, GPIO_PIN_RESET);
+			HAL_GPIO_WritePin(Motor_R_B_GPIO_Port, Motor_R_B_Pin, GPIO_PIN_SET);
+		}
 	}
-	if (pos_right < 0 )
-	{
-		__HAL_TIM_SET_COMPARE (&htim2, TIM_CHANNEL_1, (uint32_t)((ARR*pos_right* -1) * GRUZIK.Speed_level));//PWM_R
-		HAL_GPIO_WritePin(Motor_R_A_GPIO_Port, Motor_R_A_Pin, GPIO_PIN_SET);
-		HAL_GPIO_WritePin(Motor_R_B_GPIO_Port, Motor_R_B_Pin, GPIO_PIN_RESET);
-	}
-	else
-	{
-		__HAL_TIM_SET_COMPARE (&htim2, TIM_CHANNEL_1, (uint32_t)((ARR*pos_right) * GRUZIK.Speed_level));//PWM_R
-		HAL_GPIO_WritePin(Motor_R_A_GPIO_Port, Motor_R_A_Pin, GPIO_PIN_RESET);
-		HAL_GPIO_WritePin(Motor_R_B_GPIO_Port, Motor_R_B_Pin, GPIO_PIN_SET);
-	}
+	#endif
+
 }
 
 

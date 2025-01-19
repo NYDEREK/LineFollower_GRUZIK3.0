@@ -2,7 +2,7 @@
  * RingBuffer.h
  *
  *  Created on: Aug 26, 2024
- *      Author: Szymon
+ *      Author: Szymon Nyderek
  */
 
 #ifndef INC_RINGBUFFER_H_

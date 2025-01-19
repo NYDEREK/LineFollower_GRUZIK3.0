@@ -121,7 +121,7 @@ static void App_Controll(char RxData, LineFollower_t *LineFollower)
 	/*Stop robot*/
 	if(RxData == 'N')
 	{
-		uint8_t buffer[48];
+		uint8_t buffer[128];
 		/*Stop GRUZIK2.0 and turn off the LED*/
 		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, GPIO_PIN_RESET);
 		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_5, GPIO_PIN_RESET);
@@ -138,7 +138,7 @@ static void App_Controll(char RxData, LineFollower_t *LineFollower)
 		/*Proportional to battery percentage boost for motors
 		 * to keep roughly same speed as with full battery*/
 		float battery_percentage;
-		uint8_t buffer[48];
+		uint8_t buffer[128];
 		//Calculate battery percentage based on battery voltage
 		LineFollower->battery_voltage = (LineFollower->Adc_Value * 8.3)/3831;
 
@@ -177,16 +177,16 @@ static void App_Controll(char RxData, LineFollower_t *LineFollower)
 	/*LOW mode*/
 	if(RxData == 'a')
 	{
-		LineFollower->Base_speed_R = 100;
-		LineFollower->Base_speed_L = 100;
+		LineFollower->Base_speed_R = 85;
+		LineFollower->Base_speed_L = 85;
 		LineFollower->Max_speed_L = 100;
 		LineFollower->Max_speed_R = 100;
-		LineFollower->Sharp_bend_speed_right = -60;
-		LineFollower->Sharp_bend_speed_left = 95;
-		LineFollower->Bend_speed_right = -25;
-		LineFollower->Bend_speed_left = 100;
-		LineFollower->Kp = 0.01;
-		LineFollower->Kd = 0.08;
+		LineFollower->Sharp_bend_speed_right = -70;
+		LineFollower->Sharp_bend_speed_left = 70;
+		LineFollower->Bend_speed_right = -50;
+		LineFollower->Bend_speed_left = 80;
+		LineFollower->Kp = 0.015;
+		LineFollower->Kd = 0.07;
 	}
 	/*LOW+ mode*/
 	if(RxData == 'd')
@@ -205,16 +205,16 @@ static void App_Controll(char RxData, LineFollower_t *LineFollower)
 	/*Medium mode*/
 	if(RxData == 'b')
 	{
-		LineFollower->Base_speed_R = 115;
-		LineFollower->Base_speed_L = 115;
-		LineFollower->Max_speed_L = 115;
-		LineFollower->Max_speed_R = 115;
-		LineFollower->Sharp_bend_speed_right = -70;
-		LineFollower->Sharp_bend_speed_left = 85;
-		LineFollower->Bend_speed_right = -50;
-		LineFollower->Bend_speed_left = 110;
+		LineFollower->Base_speed_R = 105;
+		LineFollower->Base_speed_L = 105;
+		LineFollower->Max_speed_L = 185;
+		LineFollower->Max_speed_R = 185;
+		LineFollower->Sharp_bend_speed_right = -30;
+		LineFollower->Sharp_bend_speed_left = 90;
+		LineFollower->Bend_speed_right = -40;
+		LineFollower->Bend_speed_left = 80;
 		LineFollower->Kp = 0.015;
-		LineFollower->Kd = 0.25;
+		LineFollower->Kd = 0.09;
 	}
 	/*Medium+ mode*/
 	if(RxData == 'e')

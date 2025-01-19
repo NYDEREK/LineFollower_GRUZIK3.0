@@ -2,7 +2,7 @@
  * RingBuffer.c
  *
  *  Created on: Aug 26, 2024
- *      Author: Szymon
+ *      Author: Szymon Nyderek
  */
 #include "main.h"
 #include "RingBuffer.h"
