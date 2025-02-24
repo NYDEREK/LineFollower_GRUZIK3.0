@@ -37,7 +37,7 @@
 #include "SimpleParser.h"
 #include "motor.h"
 #include "LowPassFilter.h"
-#include "Lsm6ds3.h"
+#include "TJ_MPU6050.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -68,7 +68,10 @@
 
 	/*IMU*/
 	#define YAW_MEASUREMENT_PERIOD 0.001f//s
-	Lsm6ds3_t lsm6ds3;
+	RawData_Def myAccelRaw, myGyroRaw;
+	ScaledData_Def myAccelScaled, myGyroScaled;
+	MPU_ConfigTypeDef myMpuConfig;
+
 	float Yaw;
 
 	/*Encoders*/
@@ -95,6 +98,7 @@
 	float Speed_level = 1;
 	int ARR = 4;
 	int actives = 0;
+	uint32_t LastEndTimer;
 
 	/*Communication*/
     char buffer[28];
@@ -191,7 +195,7 @@ int main(void)
     HAL_TIM_Encoder_Start(&htim1, TIM_CHANNEL_ALL); // Right Encoder
 
     //         Motor     KP    KI
-    Motor_Init(&Motor_R, 0.1, 0.2);//0.5 0.5
+    Motor_Init(&Motor_R, 0.1, 0.2);//0.1 0.2
     Motor_Init(&Motor_L, 0.1, 0.2);
     LowPassFilter_Init(&Motor_R.EncoderRpmFilter, LOW_PASS_FILTER_ALPHA);
     LowPassFilter_Init(&Motor_L.EncoderRpmFilter, LOW_PASS_FILTER_ALPHA);
@@ -204,7 +208,16 @@ int main(void)
 	HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_4);//left pwm
 
 	/*IMU initialization*/
-	LSM_Init(&lsm6ds3, &hi2c3);
+	//1. Initialize the MPU6050 module and I2C
+//	MPU6050_Init(&hi2c3);
+//
+//	//2. Configure parameters
+//	myMpuConfig.Accel_Full_Scale = AFS_SEL_16g;
+//	myMpuConfig.ClockSource = Internal_8MHz;
+//	myMpuConfig.CONFIG_DLPF = DLPF_184A_188G_Hz;
+//	myMpuConfig.Gyro_Full_Scale = FS_SEL_500;
+//	myMpuConfig.Sleep_Mode_Bit = 0;  //1: sleep mode, 0: normal mode
+//	MPU6050_Config(&myMpuConfig);
 
     /*LED diodes initial set*/
     HAL_GPIO_WritePin(LED_4_GPIO_Port, LED_4_Pin, GPIO_PIN_SET);
@@ -212,7 +225,8 @@ int main(void)
     HAL_GPIO_WritePin(LED_2_GPIO_Port, LED_2_Pin, GPIO_PIN_SET);
     HAL_GPIO_WritePin(LED_1_GPIO_Port, LED_1_Pin, GPIO_PIN_SET);
 
-
+    /*last sensor out of the tape timer*/
+    LastEndTimer = HAL_GetTick();
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -320,17 +334,19 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	    Motor_CalculateSpeed(&Motor_L);
 
 	    /*integration of Gyroscope data for Z axis*/
-	    LSM_readGyroscope(&lsm6ds3);
-	    Yaw = Yaw + lsm6ds3.RawGz * YAW_MEASUREMENT_PERIOD;
-
-	    if(Yaw > 180)
-	    {
-	    	Yaw = -180;
-	    }
-	    if(Yaw < -180)
-	    {
-	    	Yaw = 180;
-	    }
+//		MPU6050_Get_Accel_Scale(&myAccelScaled);
+//		MPU6050_Get_Gyro_Scale(&myGyroScaled);
+//
+//	    Yaw = Yaw + myGyroScaled.z * YAW_MEASUREMENT_PERIOD;
+//
+//	    if(Yaw > 180)
+//	    {
+//	    	Yaw = -180;
+//	    }
+//	    if(Yaw < -180)
+//	    {
+//	    	Yaw = 180;
+//	    }
 	}
 }
 /*Functions*/
@@ -527,8 +543,12 @@ int QTR8_read ()
 	if (HAL_GPIO_ReadPin(SENSOR1_GPIO_Port, SENSOR1_Pin)) { // LEFT SIDE
 		Sensors_read |= 0x000000000001;
 		pos += 1000 * SENSOR_SCALE;//1000
-    active++;
-		Last_end = 1;
+		active++;
+		if(HAL_GetTick() > (LastEndTimer + 50))
+		{
+			LastEndTimer = HAL_GetTick();
+			Last_end = 1;
+		}
 	}
 	if (HAL_GPIO_ReadPin(SENSOR2_GPIO_Port, SENSOR2_Pin)) {
 		Sensors_read |= 0x000000000010;
@@ -588,8 +608,13 @@ int QTR8_read ()
   if (HAL_GPIO_ReadPin(SENSOR12_GPIO_Port, SENSOR12_Pin)) { // RIGH SIDE
 	   Sensors_read |= 0x100000000000;
 	   pos += 12000 * SENSOR_SCALE;//8000
-    active++;
-	   Last_end = 0;
+       active++;
+
+        if(HAL_GetTick() > (LastEndTimer + 50))
+		{
+			LastEndTimer = HAL_GetTick();
+			Last_end = 0;
+		}
   }
 
   HAL_GPIO_WritePin(LEDON_GPIO_Port, LEDON_Pin, 0);

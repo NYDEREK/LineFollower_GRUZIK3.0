@@ -1,0 +1,14 @@
+../Core/Src/TJ_MPU6050.c:36:6:MPU6050_Init	1
+../Core/Src/TJ_MPU6050.c:43:6:I2C_Read	1
+../Core/Src/TJ_MPU6050.c:55:6:I2C_Write8	1
+../Core/Src/TJ_MPU6050.c:65:6:MPU6050_Config	9
+../Core/Src/TJ_MPU6050.c:143:9:MPU6050_Get_SMPRT_DIV	1
+../Core/Src/TJ_MPU6050.c:152:6:MPU6050_Set_SMPRT_DIV	1
+../Core/Src/TJ_MPU6050.c:158:9:MPU6050_Get_FSYNC	1
+../Core/Src/TJ_MPU6050.c:168:6:MPU6050_Set_FSYNC	1
+../Core/Src/TJ_MPU6050.c:180:6:MPU6050_Get_Accel_RawData	2
+../Core/Src/TJ_MPU6050.c:203:6:MPU6050_Get_Accel_Scale	1
+../Core/Src/TJ_MPU6050.c:216:6:MPU6050_Get_Accel_Cali	1
+../Core/Src/TJ_MPU6050.c:227:6:MPU6050_Get_Gyro_RawData	1
+../Core/Src/TJ_MPU6050.c:238:6:MPU6050_Get_Gyro_Scale	1
+../Core/Src/TJ_MPU6050.c:250:6:_Accel_Cali	1

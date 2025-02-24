@@ -41,7 +41,7 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
  ../Core/Inc/SimpleParser.h ../Core/Inc/RingBuffer.h \
  ../Core/Inc/Line_Follower.h ../Core/Inc/motor.h \
  ../Core/Inc/LowPassFilter.h ../Core/Inc/LowPassFilter.h \
- ../Core/Inc/Lsm6ds3.h
+ ../Core/Inc/TJ_MPU6050.h
 ../Core/Inc/main.h:
 ../Drivers/STM32G4xx_HAL_Driver/Inc/stm32g4xx_hal.h:
 ../Core/Inc/stm32g4xx_hal_conf.h:
@@ -95,4 +95,4 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
 ../Core/Inc/motor.h:
 ../Core/Inc/LowPassFilter.h:
 ../Core/Inc/LowPassFilter.h:
-../Core/Inc/Lsm6ds3.h:
+../Core/Inc/TJ_MPU6050.h:

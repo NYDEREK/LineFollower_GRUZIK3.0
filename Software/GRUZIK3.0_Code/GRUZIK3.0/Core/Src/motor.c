@@ -25,7 +25,7 @@ static void Motor_SavePreviousRPMs(motor_t *motor, float rpm)
 }
 void Motor_CalculateSpeed(motor_t *motor)
 {
-	 //How many impulses did we get ?
+	//How many impulses did we get ?
 	int impulses;
 	impulses = (int32_t)motor->EncoderValue - (int32_t)motor->EncoderPreviousValue;
 
@@ -52,7 +52,7 @@ void Motor_CalculateSpeed(motor_t *motor)
 	{
 		motor->RPM = motor->PreviousRPM;
 	}
-	Motor_SavePreviousRPMs(motor, motor->RPM);
+	//Motor_SavePreviousRPMs(motor, motor->RPM);
 	LowPassFilter_Update(&motor->EncoderRpmFilter, motor->RPM);
 	motor->MetersPerHour = motor->EncoderRpmFilter.output / RPM_TO_MH;
 	//motor->MetersPerHour = motor->RPM / RPM_TO_MH;
@@ -69,21 +69,33 @@ void Motor_Init(motor_t *motor, float Kp, float Ki)
 
 void PI_Loop(motor_t *motor)
 {
-	//Get current speed from Encoders
-	motor->current_speed = motor->MetersPerSecond * 65; // From m/s to bananas per second //155
+	//
+	//TODO: Work on this with https://classroom.ubicoders.com/yt_simple_pid
+	//
+	//
+	motor->current_speed = motor->MetersPerSecond * 65; // From m/s to bananas per second
+
+	//Get absolute speed
 	if(motor->current_speed < 0)
 	{
 		motor->current_speed = motor->current_speed * -1;
 	}
-	//motor->current_speed = motor->MetersPerSecondLPF.output * 65;
-	motor->P =  motor->set_speed - motor->current_speed;
 
-	for (int i = 0; i < 5; i++)
+	//Get the difference between speed that we need and actual speed
+	motor->error =  motor->set_speed - motor->current_speed;
+
+	//Add current error to previous errors
+	motor->Error_sum = motor->Error_sum +motor->P;
+	if(motor->Error_sum > 100)
 	{
-		motor->Error_sum +=  motor->Errors[i];
+		motor->Error_sum = 100;
+	}
+	else if(motor->Error_sum < -100)
+	{
+		motor->Error_sum = -100;
 	}
 
-	motor->I = motor->Error_sum;
+	//Calculate new speed with PI parameters
+	motor->speed = motor->set_speed + (motor->error * motor->kp) + (motor->Error_sum *motor->ki);
 
-	motor->speed = motor->set_speed + (motor->P * motor->kp) + (motor->I *motor->ki);
 }

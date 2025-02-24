@@ -3,6 +3,7 @@
 "./Core/Src/Lsm6ds3.o"
 "./Core/Src/RingBuffer.o"
 "./Core/Src/SimpleParser.o"
+"./Core/Src/TJ_MPU6050.o"
 "./Core/Src/adc.o"
 "./Core/Src/dma.o"
 "./Core/Src/gpio.o"

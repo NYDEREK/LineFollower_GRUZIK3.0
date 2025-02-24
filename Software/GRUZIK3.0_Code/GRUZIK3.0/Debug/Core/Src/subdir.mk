@@ -10,6 +10,7 @@ C_SRCS += \
 ../Core/Src/Lsm6ds3.c \
 ../Core/Src/RingBuffer.c \
 ../Core/Src/SimpleParser.c \
+../Core/Src/TJ_MPU6050.c \
 ../Core/Src/adc.c \
 ../Core/Src/dma.c \
 ../Core/Src/gpio.c \
@@ -31,6 +32,7 @@ OBJS += \
 ./Core/Src/Lsm6ds3.o \
 ./Core/Src/RingBuffer.o \
 ./Core/Src/SimpleParser.o \
+./Core/Src/TJ_MPU6050.o \
 ./Core/Src/adc.o \
 ./Core/Src/dma.o \
 ./Core/Src/gpio.o \
@@ -52,6 +54,7 @@ C_DEPS += \
 ./Core/Src/Lsm6ds3.d \
 ./Core/Src/RingBuffer.d \
 ./Core/Src/SimpleParser.d \
+./Core/Src/TJ_MPU6050.d \
 ./Core/Src/adc.d \
 ./Core/Src/dma.d \
 ./Core/Src/gpio.d \
@@ -75,7 +78,7 @@ Core/Src/%.o Core/Src/%.su Core/Src/%.cyclo: ../Core/Src/%.c Core/Src/subdir.mk
 clean: clean-Core-2f-Src
 
 clean-Core-2f-Src:
-	-$(RM) ./Core/Src/Line_Follower.cyclo ./Core/Src/Line_Follower.d ./Core/Src/Line_Follower.o ./Core/Src/Line_Follower.su ./Core/Src/LowPassFilter.cyclo ./Core/Src/LowPassFilter.d ./Core/Src/LowPassFilter.o ./Core/Src/LowPassFilter.su ./Core/Src/Lsm6ds3.cyclo ./Core/Src/Lsm6ds3.d ./Core/Src/Lsm6ds3.o ./Core/Src/Lsm6ds3.su ./Core/Src/RingBuffer.cyclo ./Core/Src/RingBuffer.d ./Core/Src/RingBuffer.o ./Core/Src/RingBuffer.su ./Core/Src/SimpleParser.cyclo ./Core/Src/SimpleParser.d ./Core/Src/SimpleParser.o ./Core/Src/SimpleParser.su ./Core/Src/adc.cyclo ./Core/Src/adc.d ./Core/Src/adc.o ./Core/Src/adc.su ./Core/Src/dma.cyclo ./Core/Src/dma.d ./Core/Src/dma.o ./Core/Src/dma.su ./Core/Src/gpio.cyclo ./Core/Src/gpio.d ./Core/Src/gpio.o ./Core/Src/gpio.su ./Core/Src/i2c.cyclo ./Core/Src/i2c.d ./Core/Src/i2c.o ./Core/Src/i2c.su ./Core/Src/main.cyclo ./Core/Src/main.d ./Core/Src/main.o ./Core/Src/main.su ./Core/Src/motor.cyclo ./Core/Src/motor.d ./Core/Src/motor.o ./Core/Src/motor.su ./Core/Src/spi.cyclo ./Core/Src/spi.d ./Core/Src/spi.o ./Core/Src/spi.su ./Core/Src/stm32g4xx_hal_msp.cyclo ./Core/Src/stm32g4xx_hal_msp.d ./Core/Src/stm32g4xx_hal_msp.o ./Core/Src/stm32g4xx_hal_msp.su ./Core/Src/stm32g4xx_it.cyclo ./Core/Src/stm32g4xx_it.d ./Core/Src/stm32g4xx_it.o ./Core/Src/stm32g4xx_it.su ./Core/Src/syscalls.cyclo ./Core/Src/syscalls.d ./Core/Src/syscalls.o ./Core/Src/syscalls.su ./Core/Src/sysmem.cyclo ./Core/Src/sysmem.d ./Core/Src/sysmem.o ./Core/Src/sysmem.su ./Core/Src/system_stm32g4xx.cyclo ./Core/Src/system_stm32g4xx.d ./Core/Src/system_stm32g4xx.o ./Core/Src/system_stm32g4xx.su ./Core/Src/tim.cyclo ./Core/Src/tim.d ./Core/Src/tim.o ./Core/Src/tim.su ./Core/Src/usart.cyclo ./Core/Src/usart.d ./Core/Src/usart.o ./Core/Src/usart.su
+	-$(RM) ./Core/Src/Line_Follower.cyclo ./Core/Src/Line_Follower.d ./Core/Src/Line_Follower.o ./Core/Src/Line_Follower.su ./Core/Src/LowPassFilter.cyclo ./Core/Src/LowPassFilter.d ./Core/Src/LowPassFilter.o ./Core/Src/LowPassFilter.su ./Core/Src/Lsm6ds3.cyclo ./Core/Src/Lsm6ds3.d ./Core/Src/Lsm6ds3.o ./Core/Src/Lsm6ds3.su ./Core/Src/RingBuffer.cyclo ./Core/Src/RingBuffer.d ./Core/Src/RingBuffer.o ./Core/Src/RingBuffer.su ./Core/Src/SimpleParser.cyclo ./Core/Src/SimpleParser.d ./Core/Src/SimpleParser.o ./Core/Src/SimpleParser.su ./Core/Src/TJ_MPU6050.cyclo ./Core/Src/TJ_MPU6050.d ./Core/Src/TJ_MPU6050.o ./Core/Src/TJ_MPU6050.su ./Core/Src/adc.cyclo ./Core/Src/adc.d ./Core/Src/adc.o ./Core/Src/adc.su ./Core/Src/dma.cyclo ./Core/Src/dma.d ./Core/Src/dma.o ./Core/Src/dma.su ./Core/Src/gpio.cyclo ./Core/Src/gpio.d ./Core/Src/gpio.o ./Core/Src/gpio.su ./Core/Src/i2c.cyclo ./Core/Src/i2c.d ./Core/Src/i2c.o ./Core/Src/i2c.su ./Core/Src/main.cyclo ./Core/Src/main.d ./Core/Src/main.o ./Core/Src/main.su ./Core/Src/motor.cyclo ./Core/Src/motor.d ./Core/Src/motor.o ./Core/Src/motor.su ./Core/Src/spi.cyclo ./Core/Src/spi.d ./Core/Src/spi.o ./Core/Src/spi.su ./Core/Src/stm32g4xx_hal_msp.cyclo ./Core/Src/stm32g4xx_hal_msp.d ./Core/Src/stm32g4xx_hal_msp.o ./Core/Src/stm32g4xx_hal_msp.su ./Core/Src/stm32g4xx_it.cyclo ./Core/Src/stm32g4xx_it.d ./Core/Src/stm32g4xx_it.o ./Core/Src/stm32g4xx_it.su ./Core/Src/syscalls.cyclo ./Core/Src/syscalls.d ./Core/Src/syscalls.o ./Core/Src/syscalls.su ./Core/Src/sysmem.cyclo ./Core/Src/sysmem.d ./Core/Src/sysmem.o ./Core/Src/sysmem.su ./Core/Src/system_stm32g4xx.cyclo ./Core/Src/system_stm32g4xx.d ./Core/Src/system_stm32g4xx.o ./Core/Src/system_stm32g4xx.su ./Core/Src/tim.cyclo ./Core/Src/tim.d ./Core/Src/tim.o ./Core/Src/tim.su ./Core/Src/usart.cyclo ./Core/Src/usart.d ./Core/Src/usart.o ./Core/Src/usart.su
 
 .PHONY: clean-Core-2f-Src
 
