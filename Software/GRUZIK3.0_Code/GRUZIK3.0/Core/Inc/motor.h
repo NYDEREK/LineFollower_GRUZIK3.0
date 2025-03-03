@@ -20,8 +20,8 @@
 typedef struct
 {
 	/*Encoder and speed*/
-	uint16_t EncoderValue;
-	uint16_t EncoderPreviousValue;
+	uint32_t EncoderValue;
+	uint32_t EncoderPreviousValue;  //was on uint16_t
 	float RPM;
 	float PreviousRPM;
 	float PreviousRPMs[5];

@@ -191,10 +191,10 @@ static void App_Controll(char RxData, LineFollower_t *LineFollower)
 	/*LOW+ mode*/
 	if(RxData == 'd')
 	{
-		LineFollower->Base_speed_R = 100;
-		LineFollower->Base_speed_L = 100;
-		LineFollower->Max_speed_L = 150;
-		LineFollower->Max_speed_R = 150;
+		LineFollower->Base_speed_R = 105;
+		LineFollower->Base_speed_L = 105;
+		LineFollower->Max_speed_L = 152;
+		LineFollower->Max_speed_R = 152;
 		LineFollower->Sharp_bend_speed_right = -30;
 		LineFollower->Sharp_bend_speed_left = 100;
 		LineFollower->Bend_speed_right = -40;
