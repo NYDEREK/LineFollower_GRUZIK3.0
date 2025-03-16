@@ -29,7 +29,7 @@ void MapUpdate(Map_t *map, motor_t *MotorLeft, motor_t *MotorRight)
 		//(2.11) -- Translation In Measurement
 		float Ti = (MotorLeft->LpfDistanceInMeasurement + MotorRight->LpfDistanceInMeasurement) / 2;
 		//(2.12) -- Rotation In Measurement
-		float Ri = (MotorRight->LpfDistanceInMeasurement - MotorLeft->LpfDistanceInMeasurement) / MAIN_PCB_LENGTH;
+		float Ri = (MotorRight->LpfDistanceInMeasurement - MotorLeft->LpfDistanceInMeasurement) / (MAIN_PCB_LENGTH * 2 * 1.05);
 
 		//(2.13) -- Main PCB Position
 		map->Xri = map->Xri + (Ti * cosf(map->Ori));

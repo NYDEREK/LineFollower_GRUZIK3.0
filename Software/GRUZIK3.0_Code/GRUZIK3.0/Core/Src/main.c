@@ -341,15 +341,16 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
 	if(htim->Instance == TIM5)
 	{
-		/*Save last values*/
-		Motor_L.EncoderPreviousValue = Motor_L.EncoderValue;
-		Motor_R.EncoderPreviousValue = Motor_R.EncoderValue;
 		/*Get Encoder values*/
 		Motor_L.EncoderValue = __HAL_TIM_GET_COUNTER(&htim4);
 		Motor_R.EncoderValue = __HAL_TIM_GET_COUNTER(&htim1);
+		/*Set central point for encoders again*/
+		htim4.Instance->CNT = 20000;
+		htim1.Instance->CNT = 20000;
 
 	    Motor_CalculateSpeed(&Motor_R);
 	    Motor_CalculateSpeed(&Motor_L);
+
 // -- Encoder Data to SD card
 //		if(map.Mapping == 1)
 //		{

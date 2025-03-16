@@ -10,17 +10,15 @@
 #include "LowPassFilter.h"
 void Motor_CalculateSpeed(motor_t *motor)
 {
-	//How many impulses did we get ?
+	// (0.0) --  How many impulses did we get ?
 	int impulses;
-	impulses = ((int32_t)motor->EncoderValue - (int32_t)motor->EncoderPreviousValue) * -1;
+	impulses = (int32_t)motor->EncoderValue - 20000;
+
+	// (0.1) -- Invert direction to " FORWARD "
+	impulses = impulses * -1;
 
 	/*Distance traveled in 0.001s (One cycle)*/
-	if(impulses < 0)
-	{
-		//impulses = impulses * -1;
-		impulses = 0;
-		//TODO: zastanow sie czy tu tez tego ci trzeba czy nie ogarniesz w dwie strony
-	}
+
 	motor->DistanceInMeasurement = ((float)impulses * WHEEL_CIRCUMFERENCE) / (IMPULSES_PER_ROTATION * GEAR_RATIO);
 	/*Whole distance wheel has traveled*/
 	motor->DistanceTraveled = motor->DistanceTraveled + motor->DistanceInMeasurement;
@@ -58,7 +56,7 @@ void Motor_Init(motor_t *motor, float Kp, float Ki)
 {
 	motor->kp = Kp;
 	motor->ki = Ki;
-	motor->MetersPerSecondLPF.alpha = 0.9; // -- works like translation filter
+	motor->MetersPerSecondLPF.alpha = 0.1; // -- works like translation filter
 }
 
 void PI_Loop(motor_t *motor)
