@@ -14,7 +14,16 @@
 #include "stdlib.h"
 #include "SimpleParser.h"
 #include "Line_Follower.h"
+#include "app_fatfs.h"
+#include "map.h"
 char My_Name[32] = "GRUZIK3.0";
+
+// -- SD card -- //
+extern FRESULT FatFsResult;
+extern FATFS SdFatFs;
+extern FIL SdCardFile;
+/*MAP*/
+extern Map_t map;
 
 void Parser_TakeLine(RingBuffer_t *Buf, uint8_t *ReceivedData)
 {
@@ -131,6 +140,11 @@ static void App_Controll(char RxData, LineFollower_t *LineFollower)
 		LineFollower->battery_voltage = (LineFollower->Adc_Value * 8.3)/3831;
 		sprintf((char*)buffer, "ADC_Value = %d \r\n Battery_Voltage = %0.2f V \r\n", LineFollower->Adc_Value, LineFollower->battery_voltage);
 		HAL_UART_Transmit(&hlpuart1, buffer, strlen((char*)buffer), 100);
+
+		/*Stop mapping the track*/
+		map.Mapping = 0;
+		FatFsResult = f_close(&SdCardFile);
+
 	}
 	/*Start robot*/
 	if (RxData == 'Y')
@@ -173,6 +187,10 @@ static void App_Controll(char RxData, LineFollower_t *LineFollower)
 		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, GPIO_PIN_SET);
 		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_5, GPIO_PIN_SET);
 		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, GPIO_PIN_SET);
+
+		/*Start mapping the track*/
+		FatFsResult = f_open(&SdCardFile, "GRUZIK.txt", FA_WRITE|FA_OPEN_APPEND);
+		map.Mapping = 1;
 	}
 	/*LOW mode*/
 	if(RxData == 'a')
@@ -346,16 +364,27 @@ static void App_Controll(char RxData, LineFollower_t *LineFollower)
  	  /*SPECIAL mode*/
  	  if(RxData == 'h')
  	  {
- 	    LineFollower->Base_speed_R = 135;
- 	    LineFollower->Base_speed_L = 135;
- 	    LineFollower->Max_speed_L = 135;
- 	    LineFollower->Max_speed_R = 135;
- 	 	LineFollower->Sharp_bend_speed_right = -66;
- 		LineFollower->Sharp_bend_speed_left = 92;
- 		LineFollower->Bend_speed_right = -50;
- 		LineFollower->Bend_speed_left = 30;
- 		LineFollower->Kp = 0.015;
- 		LineFollower->Kd = 0.2;
+// 	    LineFollower->Base_speed_R = 135;
+// 	    LineFollower->Base_speed_L = 135;
+// 	    LineFollower->Max_speed_L = 135;
+// 	    LineFollower->Max_speed_R = 135;
+// 	 	LineFollower->Sharp_bend_speed_right = -66;
+// 		LineFollower->Sharp_bend_speed_left = 92;
+// 		LineFollower->Bend_speed_right = -50;
+// 		LineFollower->Bend_speed_left = 30;
+// 		LineFollower->Kp = 0.015;
+// 		LineFollower->Kd = 0.2;
+ 			LineFollower->Base_speed_R = 55;
+ 			LineFollower->Base_speed_L = 55;
+ 			LineFollower->Max_speed_L = 80;
+ 			LineFollower->Max_speed_R = 80;
+ 			LineFollower->Sharp_bend_speed_right = -70;
+ 			LineFollower->Sharp_bend_speed_left = 70;
+ 			LineFollower->Bend_speed_right = -50;
+ 			LineFollower->Bend_speed_left = 80;
+ 			LineFollower->Kp = 0.015;
+ 			LineFollower->Kd = 0.07;
+
  	  }
  	  /*RA-1-final-slower*/
  	  if(RxData == 'o')

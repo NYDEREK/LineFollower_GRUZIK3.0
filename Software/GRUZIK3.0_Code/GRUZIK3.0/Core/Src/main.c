@@ -20,6 +20,7 @@
 #include "main.h"
 #include "adc.h"
 #include "dma.h"
+#include "app_fatfs.h"
 #include "i2c.h"
 #include "usart.h"
 #include "spi.h"
@@ -28,7 +29,6 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-//#include "D:\SN-USER\HAL-SN-Functions\SN-functions.h"
 #include "stdlib.h"
 #include "stdio.h"
 #include "string.h"
@@ -38,6 +38,7 @@
 #include "motor.h"
 #include "LowPassFilter.h"
 #include "TJ_MPU6050.h"
+#include "map.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -65,6 +66,13 @@
 	/*Sensor*/
 	#define SENSOR_SCALE 1 // sensor values multiplier -- for tests only
 
+	/*MAP*/
+	Map_t map;
+
+	/*FatFS variables*/
+	FRESULT FatFsResult;
+	FATFS SdFatFs;
+	FIL SdCardFile;
 
 	/*IMU*/
 	#define YAW_MEASUREMENT_PERIOD 0.001f//s
@@ -102,6 +110,7 @@
 
 	/*Communication*/
     char buffer[28];
+    uint8_t buffer_2[60];
     uint8_t RxData;
 	RingBuffer_t RB, ReceiveBuffer;
 	uint8_t ReceivedData[32];
@@ -168,8 +177,11 @@ int main(void)
   MX_TIM4_Init();
   MX_TIM3_Init();
   MX_TIM5_Init();
+  if (MX_FATFS_Init() != APP_OK) {
+    Error_Handler();
+  }
   /* USER CODE BEGIN 2 */
-  HAL_ADC_Start_DMA(&hadc1, (uint32_t*)&GRUZIK.Adc_Value, 1);
+  	HAL_ADC_Start_DMA(&hadc1, (uint32_t*)&GRUZIK.Adc_Value, 1);
 
   	/*Set initial values for PID*/
     GRUZIK.Kp = 0.02;
@@ -202,6 +214,11 @@ int main(void)
     LowPassFilter_Init(&Motor_L.EncoderRpmFilter, LOW_PASS_FILTER_ALPHA);
     LowPassFilter_Init(&Motor_L.MetersPerSecondLPF, LOW_PASS_FILTER_ALPHA);
     LowPassFilter_Init(&Motor_R.MetersPerSecondLPF, LOW_PASS_FILTER_ALPHA);
+
+    /*SD Card file initialization*/
+    FatFsResult = f_mount(&SdFatFs, "", 1);
+    FatFsResult = f_open(&SdCardFile, "GRUZIK.txt", FA_WRITE|FA_OPEN_APPEND);
+
 
 	/*Start timers and PWM on channels*/
 	HAL_TIM_Base_Start_IT(&htim3);
@@ -333,9 +350,20 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
 	    Motor_CalculateSpeed(&Motor_R);
 	    Motor_CalculateSpeed(&Motor_L);
+// -- Encoder Data to SD card
+//		if(map.Mapping == 1)
+//		{
+//			//sprintf((char*)buffer_2, " %0.3f	%lu \n" ,HAL_GetTick(), Motor_R.current_speed);
+//			sprintf((char*)buffer_2, " %lu	%0.3f \n" ,HAL_GetTick(), Motor_R.current_speed);
+//			f_printf(&SdCardFile, (char*)buffer_2);
+//		}
+
+
 	    /*integration of Gyroscope data for Z axis*/
 //		MPU6050_Get_Accel_Scale(&myAccelScaled);
 //		MPU6050_Get_Gyro_Scale(&myGyroScaled);
+
+	   MapUpdate(&map, &Motor_L, &Motor_R);
 //
 //	    Yaw = Yaw + myGyroScaled.z * YAW_MEASUREMENT_PERIOD;
 //

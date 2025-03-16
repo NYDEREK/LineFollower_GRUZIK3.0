@@ -37,7 +37,13 @@ Core/Src/SimpleParser.o: ../Core/Src/SimpleParser.c ../Core/Inc/main.h \
  ../Drivers/STM32G4xx_HAL_Driver/Inc/stm32g4xx_hal_uart_ex.h \
  ../Core/Inc/usart.h ../Core/Inc/main.h ../Core/Inc/RingBuffer.h \
  ../Core/Inc/SimpleParser.h ../Core/Inc/RingBuffer.h \
- ../Core/Inc/Line_Follower.h ../Core/Inc/Line_Follower.h
+ ../Core/Inc/Line_Follower.h ../Core/Inc/Line_Follower.h \
+ ../FATFS/App/app_fatfs.h ../Middlewares/Third_Party/FatFs/src/ff.h \
+ ../Middlewares/Third_Party/FatFs/src/integer.h ../FATFS/Target/ffconf.h \
+ ../Middlewares/Third_Party/FatFs/src/ff_gen_drv.h \
+ ../Middlewares/Third_Party/FatFs/src/diskio.h \
+ ../Middlewares/Third_Party/FatFs/src/ff.h ../FATFS/Target/user_diskio.h \
+ ../Core/Inc/map.h ../Core/Inc/motor.h ../Core/Inc/LowPassFilter.h
 ../Core/Inc/main.h:
 ../Drivers/STM32G4xx_HAL_Driver/Inc/stm32g4xx_hal.h:
 ../Core/Inc/stm32g4xx_hal_conf.h:
@@ -82,3 +88,14 @@ Core/Src/SimpleParser.o: ../Core/Src/SimpleParser.c ../Core/Inc/main.h \
 ../Core/Inc/RingBuffer.h:
 ../Core/Inc/Line_Follower.h:
 ../Core/Inc/Line_Follower.h:
+../FATFS/App/app_fatfs.h:
+../Middlewares/Third_Party/FatFs/src/ff.h:
+../Middlewares/Third_Party/FatFs/src/integer.h:
+../FATFS/Target/ffconf.h:
+../Middlewares/Third_Party/FatFs/src/ff_gen_drv.h:
+../Middlewares/Third_Party/FatFs/src/diskio.h:
+../Middlewares/Third_Party/FatFs/src/ff.h:
+../FATFS/Target/user_diskio.h:
+../Core/Inc/map.h:
+../Core/Inc/motor.h:
+../Core/Inc/LowPassFilter.h:

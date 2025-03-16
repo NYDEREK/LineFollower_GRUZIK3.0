@@ -12,9 +12,15 @@ void Motor_CalculateSpeed(motor_t *motor)
 {
 	//How many impulses did we get ?
 	int impulses;
-	impulses = (int32_t)motor->EncoderValue - (int32_t)motor->EncoderPreviousValue;
+	impulses = ((int32_t)motor->EncoderValue - (int32_t)motor->EncoderPreviousValue) * -1;
 
 	/*Distance traveled in 0.001s (One cycle)*/
+	if(impulses < 0)
+	{
+		//impulses = impulses * -1;
+		impulses = 0;
+		//TODO: zastanow sie czy tu tez tego ci trzeba czy nie ogarniesz w dwie strony
+	}
 	motor->DistanceInMeasurement = ((float)impulses * WHEEL_CIRCUMFERENCE) / (IMPULSES_PER_ROTATION * GEAR_RATIO);
 	/*Whole distance wheel has traveled*/
 	motor->DistanceTraveled = motor->DistanceTraveled + motor->DistanceInMeasurement;
@@ -24,6 +30,8 @@ void Motor_CalculateSpeed(motor_t *motor)
 	motor->MetersPerSecond = motor->DistanceInMeasurement * -1000.0f; // 1s = 1000ms
 
 	LowPassFilter_Update(&motor->MetersPerSecondLPF, motor->MetersPerSecond);
+
+	motor->LpfDistanceInMeasurement = motor->MetersPerSecondLPF.output / -1000.0f;
 
 
     //How many times motor has rotated ?
@@ -50,6 +58,7 @@ void Motor_Init(motor_t *motor, float Kp, float Ki)
 {
 	motor->kp = Kp;
 	motor->ki = Ki;
+	motor->MetersPerSecondLPF.alpha = 0.9; // -- works like translation filter
 }
 
 void PI_Loop(motor_t *motor)
@@ -60,6 +69,7 @@ void PI_Loop(motor_t *motor)
 	if(motor->current_speed < 0)
 	{
 		motor->current_speed = motor->current_speed * -1;
+		//Zastanów się czy faktycznie to jest potrzebne
 	}
 
 	//Get the difference between speed that we need and actual speed

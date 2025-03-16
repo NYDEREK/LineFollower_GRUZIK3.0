@@ -35,7 +35,9 @@ typedef struct
 
 	/*Tracking*/
 	float DistanceInMeasurement;
+	float LpfDistanceInMeasurement;
 	float DistanceTraveled;
+
 
 	/*PI algorithm*/
 	float set_speed;
