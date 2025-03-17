@@ -33,6 +33,13 @@
 - Encoders - AMS AS5047P-ATSM
 - IMU - Lsm6ds3
 
+## 🗺️ Mapping 🗺️
+> **GRUZIK3.0 is able to record it's route and save it on uSD card. Results can be represented as XY map and in future will be used to optimize the track**
+
+<div align="center">
+<img src="https://github.com/user-attachments/assets/3380e373-49cb-4409-96b3-cbfbdf068092" width="700"/>
+</div>
+
 ## 📱Bluetooth Apps 📱
 
 > **Thease are simple Bluetooth apps created with MIT App Inventor. Spps start and stop the robot. The Modes pad is responsible for quickly adapting the speed and accuracy of the robot to the route using modes, and the application also displays the battery charge status. Second app is mainly for tweaking PID settings it allows you to change any parameter in seconds**
