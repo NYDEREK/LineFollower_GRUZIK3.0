@@ -31,7 +31,7 @@
 - motors - Pololu 2211
 - Bluetooth - HC-04
 - Encoders - AMS AS5047P-ATSM
-- IMU - Lsm6ds3
+- IMU - MPU-6050
 
 ## 🗺️ Mapping 🗺️
 > **GRUZIK3.0 is able to record it's route and save it on uSD card. Results can be represented as XY map and in future will be used to optimize the track**
