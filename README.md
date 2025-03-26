@@ -28,7 +28,7 @@
 - sensor - 12x KTIR0711S
 - battery - 150mAh LiPo dualsky
 - wheels - Kyosho Mini Z
-- motors - Pololu 2211
+- motors - Pololu 3071 HPCB
 - Bluetooth - HC-04
 - Encoders - AMS AS5047P-ATSM
 - IMU - MPU-6050
