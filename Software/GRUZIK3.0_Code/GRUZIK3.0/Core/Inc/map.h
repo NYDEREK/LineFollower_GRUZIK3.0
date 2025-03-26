@@ -20,7 +20,13 @@
 typedef struct {
 	uint8_t Mapping;
 	float Map[MAP_SIZE][2];
+	///
+	float Kk; // -- curvature to speed adjuster
 
+	///
+	float WayPoint[2][5];
+	float WayPointError;
+	float WayPointSpeedCompensation;
 	////
 	float Ti;
 	float Ri;
@@ -30,7 +36,11 @@ typedef struct {
 	float Ori, PreviousOri;
 	///
 	float Qri[3]; //(Xri, Yri, Ori)
-	float Pci[2];
+	float Pci[2], PreviousPci[2];
+	///
+	float Si;
+	float Ai , PreviousAi;
+	float Ki;
 
 } Map_t;
 

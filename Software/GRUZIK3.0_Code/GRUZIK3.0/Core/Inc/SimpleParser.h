@@ -18,5 +18,6 @@
 
 void Parser_TakeLine(RingBuffer_t *Buf, uint8_t *ReceivedData);
 void Parser_Parse(uint8_t *ReceivedData, LineFollower_t *LineFollower);
+void App_Controll(char RxData, LineFollower_t *LineFollower);
 
 #endif /* INC_SIMPLEPARSER_H_ */

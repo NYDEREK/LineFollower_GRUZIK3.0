@@ -125,7 +125,7 @@ static void Bend_speed_left_change(LineFollower_t *LF)
 	LF->Bend_speed_left = atof(ParsePointer);
 	}
 }
-static void App_Controll(char RxData, LineFollower_t *LineFollower)
+void App_Controll(char RxData, LineFollower_t *LineFollower)
 {
 	/*Stop robot*/
 	if(RxData == 'N')
@@ -209,10 +209,10 @@ static void App_Controll(char RxData, LineFollower_t *LineFollower)
 	/*LOW+ mode*/
 	if(RxData == 'd')
 	{
-		LineFollower->Base_speed_R = 105;
-		LineFollower->Base_speed_L = 105;
-		LineFollower->Max_speed_L = 152;
-		LineFollower->Max_speed_R = 152;
+		LineFollower->Base_speed_R = 95;
+		LineFollower->Base_speed_L = 95;
+		LineFollower->Max_speed_L = 120;
+		LineFollower->Max_speed_R = 120;
 		LineFollower->Sharp_bend_speed_right = -30;
 		LineFollower->Sharp_bend_speed_left = 100;
 		LineFollower->Bend_speed_right = -40;
@@ -225,28 +225,28 @@ static void App_Controll(char RxData, LineFollower_t *LineFollower)
 	{
 		LineFollower->Base_speed_R = 105;
 		LineFollower->Base_speed_L = 105;
-		LineFollower->Max_speed_L = 185;
-		LineFollower->Max_speed_R = 185;
+		LineFollower->Max_speed_L = 152;
+		LineFollower->Max_speed_R = 152;
 		LineFollower->Sharp_bend_speed_right = -30;
-		LineFollower->Sharp_bend_speed_left = 90;
+		LineFollower->Sharp_bend_speed_left = 100;
 		LineFollower->Bend_speed_right = -40;
 		LineFollower->Bend_speed_left = 80;
 		LineFollower->Kp = 0.015;
-		LineFollower->Kd = 0.09;
+		LineFollower->Kd = 0.08;
 	}
 	/*Medium+ mode*/
 	if(RxData == 'e')
 	{
-		LineFollower->Base_speed_R = 120;
-		LineFollower->Base_speed_L = 120;
-		LineFollower->Max_speed_L = 120;
-		LineFollower->Max_speed_R = 120;
-		LineFollower->Sharp_bend_speed_right = -70;
-		LineFollower->Sharp_bend_speed_left = 92;
-		LineFollower->Bend_speed_right = -50;
-		LineFollower->Bend_speed_left = 30;//110
+		LineFollower->Base_speed_R = 105;
+		LineFollower->Base_speed_L = 105;
+		LineFollower->Max_speed_L = 175;//175 //TODO: albo 170
+		LineFollower->Max_speed_R = 175;//175
+		LineFollower->Sharp_bend_speed_right = -30;
+		LineFollower->Sharp_bend_speed_left = 90;//90
+		LineFollower->Bend_speed_right = -40;//-40
+		LineFollower->Bend_speed_left = 80;//80
 		LineFollower->Kp = 0.015;
-		LineFollower->Kd = 0.2;//0.25
+		LineFollower->Kd = 0.09;//0.9
 	}
 	/*HIGH mode*/
 	if(RxData == 'c')

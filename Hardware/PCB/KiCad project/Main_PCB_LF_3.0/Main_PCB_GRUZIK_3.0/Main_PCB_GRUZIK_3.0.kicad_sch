@@ -9901,9 +9901,9 @@
 		)
 		(uuid "6f120ce1-dcc4-4cfb-9517-9089dad20684")
 	)
-	(text "LiPo 7,4V JST connector\nwith 2x 0,5A diodes"
+	(text "LiPo 7,4V JST connector\n"
 		(exclude_from_sim no)
-		(at 263.906 112.522 0)
+		(at 264.414 108.966 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -10068,7 +10068,6 @@
 	)
 	(label "HSE_IN"
 		(at 97.79 68.834 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -10079,7 +10078,6 @@
 	)
 	(label "LSE_OUT"
 		(at 95.758 119.634 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -10090,7 +10088,6 @@
 	)
 	(label "HSE_OUT"
 		(at 97.79 71.374 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -10101,7 +10098,6 @@
 	)
 	(label "LSE_IN"
 		(at 95.758 117.094 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)

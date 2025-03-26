@@ -1,0 +1,72 @@
+/*
+ * map.c
+ *
+ *  Created on: Mar 5, 2025
+ *      Author: Szymon Nyderek
+ */
+
+#include "main.h"
+#include "string.h"
+#include "stdlib.h"
+#include "stdio.h"
+#include "map.h"
+#include "Line_Follower.h"
+#include "motor.h"
+#include "math.h"
+#include "app_fatfs.h"
+
+// -- SD card -- //
+extern FRESULT FatFsResult;
+extern FATFS SdFatFs;
+extern FIL SdCardFile;
+
+void MapUpdate(Map_t *map, motor_t *MotorLeft, motor_t *MotorRight)
+{
+	if(map->Mapping == 1)
+	{
+		uint8_t buffer[100];
+
+		//(3.1) -- Save XY
+		map->PreviousXri = map->Xri;
+		map->PreviousYri = map->Yri;
+
+		map->PreviousPci[0] = map->Pci[0];
+		map->PreviousPci[1] = map->Pci[1];//TODO: zobacz co tera to daje i czemu nie dziala fajnie jak bylo bez tego
+
+		//(2.11) -- Translation In Measurement
+		float Ti = (MotorLeft->LpfDistanceInMeasurement + MotorRight->LpfDistanceInMeasurement) / 2;
+		//(2.12) -- Rotation In Measurement
+		float Ri = (MotorRight->LpfDistanceInMeasurement - MotorLeft->LpfDistanceInMeasurement) / (MAIN_PCB_LENGTH * 2 * 1.05);
+
+		//(2.13) -- Main PCB Position
+		map->Xri = map->Xri + (Ti * cosf(map->Ori));
+		map->Yri = map->Yri + (Ti * sinf(map->Ori));
+		map->Ori = map->Ori + Ri;
+
+		//(2.17) -- Sensor Position
+		map->Pci[0] = map->Xri + (MAIN_TO_SENSOR_LENGTH * cosf(map->Ori));
+		map->Pci[1] = map->Yri + (MAIN_TO_SENSOR_LENGTH * sinf(map->Ori));
+
+		//Curvature of the route for sensor
+		//(3.1) & (3.2)
+		float dx = map->Pci[0] - map->PreviousPci[0];
+		float dy = map->Pci[1] - map->PreviousPci[1];
+		Ti = sqrt(pow(dx, 2) + pow(dy, 2));
+		map->Si = map->Si + Ti;
+
+		//(3.3)
+		map->PreviousAi = map->Ai;
+		map->Ai = atan2(dy,dx);
+
+		//(3.4) & (3.5)
+		float dAi = map->Ai - map->PreviousAi;
+		if(Ti != 0)
+		{
+			map->Ki = dAi / Ti;
+		}
+
+
+		sprintf((char*)buffer, " %0.3f	%0.3f	%0.3f	%0.3f \n", map->Xri, map->Yri, map->Ori, map->Ki);
+		f_printf(&SdCardFile, (char*)buffer);
+	}
+}

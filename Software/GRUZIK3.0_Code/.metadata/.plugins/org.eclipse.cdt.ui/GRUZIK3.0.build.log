@@ -1,5 +1,6 @@
-20:55:37 **** Incremental Build of configuration Debug for project GRUZIK3.0 ****
+21:25:13 **** Incremental Build of configuration Debug for project GRUZIK3.0 ****
 make -j8 all 
+arm-none-eabi-gcc "../Core/Src/SimpleParser.c" -mcpu=cortex-m4 -std=gnu11 -g3 -DDEBUG -DUSE_HAL_DRIVER -DSTM32G474xx -c -I../Core/Inc -I../Drivers/STM32G4xx_HAL_Driver/Inc -I../Drivers/STM32G4xx_HAL_Driver/Inc/Legacy -I../Drivers/CMSIS/Device/ST/STM32G4xx/Include -I../Drivers/CMSIS/Include -I../FATFS/Target -I../FATFS/App -I../Middlewares/Third_Party/FatFs/src -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Core/Src/SimpleParser.d" -MT"Core/Src/SimpleParser.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Core/Src/SimpleParser.o"
 arm-none-eabi-gcc "../Core/Src/map.c" -mcpu=cortex-m4 -std=gnu11 -g3 -DDEBUG -DUSE_HAL_DRIVER -DSTM32G474xx -c -I../Core/Inc -I../Drivers/STM32G4xx_HAL_Driver/Inc -I../Drivers/STM32G4xx_HAL_Driver/Inc/Legacy -I../Drivers/CMSIS/Device/ST/STM32G4xx/Include -I../Drivers/CMSIS/Include -I../FATFS/Target -I../FATFS/App -I../Middlewares/Third_Party/FatFs/src -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Core/Src/map.d" -MT"Core/Src/map.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Core/Src/map.o"
 arm-none-eabi-gcc -o "GRUZIK3.0.elf" @"objects.list"   -mcpu=cortex-m4 -T"D:\SN-USER\Projects\GRUZIK3.0-light\Software\GRUZIK3.0_Code\GRUZIK3.0\STM32G474RETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="GRUZIK3.0.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -u _printf_float -Wl,--start-group -lc -lm -Wl,--end-group
 C:/ST/STM32CubeIDE_1.16.1/STM32CubeIDE/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.12.3.rel1.win32_1.1.0.202410251130/tools/bin/../lib/gcc/arm-none-eabi/12.3.1/../../../../arm-none-eabi/bin/ld.exe: warning: GRUZIK3.0.elf has a LOAD segment with RWX permissions
@@ -8,11 +9,11 @@ Finished building target: GRUZIK3.0.elf
 arm-none-eabi-size  GRUZIK3.0.elf 
 arm-none-eabi-objdump -h -S GRUZIK3.0.elf  > "GRUZIK3.0.list"
    text	   data	    bss	    dec	    hex	filename
-  83496	    504	  28736	 112736	  1b860	GRUZIK3.0.elf
+  89544	    520	  28816	 118880	  1d060	GRUZIK3.0.elf
 Finished building: default.size.stdout
  
 Finished building: GRUZIK3.0.list
  
 
-20:55:38 Build Finished. 0 errors, 1 warnings. (took 1s.946ms)
+21:25:15 Build Finished. 0 errors, 1 warnings. (took 1s.687ms)
 

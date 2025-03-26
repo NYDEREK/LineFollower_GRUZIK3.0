@@ -67,8 +67,9 @@
 	#define SENSOR_SCALE 1 // sensor values multiplier -- for tests only
 
 	/*MAP*/
+	#define CURVATURE_COMPENSATION 0
 	Map_t map;
-
+	float CurvatureSpeed;
 	/*FatFS variables*/
 	FRESULT FatFsResult;
 	FATFS SdFatFs;
@@ -199,6 +200,19 @@ int main(void)
   	GRUZIK.Bend_speed_right=-50;
   	GRUZIK.Bend_speed_left=110;
 
+//	#ifdef CURVATURE_COMPENSATION //TODO: to define dziala na odwrot zoba o co b
+//  	{
+//  		map.Kk = 0.01;//0.01
+//  	}
+//	#else
+//  	{
+//  		map.Kk = 0;
+//  	}
+//	#endif
+
+  	map.Kk = 0;
+
+
     /*Start receiving data from Blue tooth*/
     HAL_UART_Receive_IT(&hlpuart1, &RxData, 1);
 
@@ -218,7 +232,7 @@ int main(void)
     /*SD Card file initialization*/
     FatFsResult = f_mount(&SdFatFs, "", 1);
     FatFsResult = f_open(&SdCardFile, "GRUZIK.txt", FA_WRITE|FA_OPEN_APPEND);
-
+    //TODO: czy trzba to tu otwierać czy mozna miec wywalone | A moze otworzyc i zamknać (stworzyc plik)
 
 	/*Start timers and PWM on channels*/
 	HAL_TIM_Base_Start_IT(&htim3);
@@ -365,6 +379,12 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 //		MPU6050_Get_Gyro_Scale(&myGyroScaled);
 
 	   MapUpdate(&map, &Motor_L, &Motor_R);
+
+
+	   /*Speed adjustment for route curvature*/
+	   CurvatureSpeed = abs(map.Ki) * map.Kk;
+
+
 //
 //	    Yaw = Yaw + myGyroScaled.z * YAW_MEASUREMENT_PERIOD;
 //
@@ -411,7 +431,7 @@ void motor_control (double pos_right, double pos_left)
 	{
 		if (pos_left < 0 )
 		{
-			Motor_L.set_speed = pos_left * -1;
+			Motor_L.set_speed = (pos_left * -1) - CurvatureSpeed;
 			PI_Loop(&Motor_L);
 
 			__HAL_TIM_SET_COMPARE (&htim2, TIM_CHANNEL_4, (uint32_t)((ARR*Motor_L.speed) * GRUZIK.Speed_level));//PWM_L
@@ -421,7 +441,7 @@ void motor_control (double pos_right, double pos_left)
 		}
 		else
 		{
-			Motor_L.set_speed = pos_left;
+			Motor_L.set_speed = pos_left - CurvatureSpeed;
 			PI_Loop(&Motor_L);
 
 			__HAL_TIM_SET_COMPARE (&htim2, TIM_CHANNEL_4, (uint32_t)((ARR*Motor_L.speed) * GRUZIK.Speed_level));//PWM_L
@@ -430,7 +450,7 @@ void motor_control (double pos_right, double pos_left)
 		}
 		if (pos_right < 0 )
 		{
-			Motor_R.set_speed = pos_right * -1;
+			Motor_R.set_speed = (pos_right * -1) - CurvatureSpeed;
 			PI_Loop(&Motor_R);
 
 			__HAL_TIM_SET_COMPARE (&htim2, TIM_CHANNEL_1, (uint32_t)((ARR*Motor_R.speed) * GRUZIK.Speed_level));//PWM_R
@@ -439,7 +459,7 @@ void motor_control (double pos_right, double pos_left)
 		}
 		else
 		{
-			Motor_R.set_speed = pos_right;
+			Motor_R.set_speed = pos_right - CurvatureSpeed;
 			PI_Loop(&Motor_R);
 
 			__HAL_TIM_SET_COMPARE (&htim2, TIM_CHANNEL_1, (uint32_t)((ARR*Motor_R.speed) * GRUZIK.Speed_level));//PWM_R
