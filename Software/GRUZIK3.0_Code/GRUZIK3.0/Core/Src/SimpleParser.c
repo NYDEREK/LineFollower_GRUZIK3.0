@@ -211,8 +211,8 @@ void App_Controll(char RxData, LineFollower_t *LineFollower)
 	{
 		LineFollower->Base_speed_R = 95;
 		LineFollower->Base_speed_L = 95;
-		LineFollower->Max_speed_L = 120;
-		LineFollower->Max_speed_R = 120;
+		LineFollower->Max_speed_L = 140; // (120->150)
+		LineFollower->Max_speed_R = 140;
 		LineFollower->Sharp_bend_speed_right = -30;
 		LineFollower->Sharp_bend_speed_left = 100;
 		LineFollower->Bend_speed_right = -40;
@@ -223,10 +223,10 @@ void App_Controll(char RxData, LineFollower_t *LineFollower)
 	/*Medium mode*/
 	if(RxData == 'b')
 	{
-		LineFollower->Base_speed_R = 105;
-		LineFollower->Base_speed_L = 105;
-		LineFollower->Max_speed_L = 152;
-		LineFollower->Max_speed_R = 152;
+		LineFollower->Base_speed_R = 102;
+		LineFollower->Base_speed_L = 102;
+		LineFollower->Max_speed_L = 145;
+		LineFollower->Max_speed_R = 145;
 		LineFollower->Sharp_bend_speed_right = -30;
 		LineFollower->Sharp_bend_speed_left = 100;
 		LineFollower->Bend_speed_right = -40;
@@ -239,42 +239,42 @@ void App_Controll(char RxData, LineFollower_t *LineFollower)
 	{
 		LineFollower->Base_speed_R = 105;
 		LineFollower->Base_speed_L = 105;
-		LineFollower->Max_speed_L = 175;//175 //TODO: albo 170
-		LineFollower->Max_speed_R = 175;//175
+		LineFollower->Max_speed_L = 152;//175 //TODO: albo 170
+		LineFollower->Max_speed_R = 152;//175
 		LineFollower->Sharp_bend_speed_right = -30;
 		LineFollower->Sharp_bend_speed_left = 90;//90
 		LineFollower->Bend_speed_right = -40;//-40
 		LineFollower->Bend_speed_left = 80;//80
 		LineFollower->Kp = 0.015;
-		LineFollower->Kd = 0.09;//0.9
+		LineFollower->Kd = 0.08;//0.9
 	}
 	/*HIGH mode*/
 	if(RxData == 'c')
 	{
-		LineFollower->Base_speed_R = 125;
-		LineFollower->Base_speed_L = 125;
-		LineFollower->Max_speed_L = 130;//125
-		LineFollower->Max_speed_R = 130;//125
-		LineFollower->Sharp_bend_speed_right = -70;
-		LineFollower->Sharp_bend_speed_left = 92; //88
-		LineFollower->Bend_speed_right = -50;
-		LineFollower->Bend_speed_left = 30;
+		LineFollower->Base_speed_R = 100;
+		LineFollower->Base_speed_L = 100;
+		LineFollower->Max_speed_L = 165;//125
+		LineFollower->Max_speed_R = 165;//125
+		LineFollower->Sharp_bend_speed_right = -20;
+		LineFollower->Sharp_bend_speed_left = 110; //88
+		LineFollower->Bend_speed_right = -40;
+		LineFollower->Bend_speed_left = 80;
 		LineFollower->Kp = 0.015;
-		LineFollower->Kd = 0.175;//0.2
+		LineFollower->Kd = 0.08;//0.2
 	}
-	/*HIGH+ mode*/ /*For now it's just HIGH*/
+	/*HIGH+ mode*/
 	if(RxData == 'f')
 	{
-		LineFollower->Base_speed_R = 130;
-		LineFollower->Base_speed_L = 130;
-		LineFollower->Max_speed_L = 130;
-		LineFollower->Max_speed_R = 130;
-		LineFollower->Sharp_bend_speed_right = -70;
-		LineFollower->Sharp_bend_speed_left = 92; //88
-		LineFollower->Bend_speed_right = -50;
-		LineFollower->Bend_speed_left = 30;
+		LineFollower->Base_speed_R = 115;
+		LineFollower->Base_speed_L = 115;
+		LineFollower->Max_speed_L = 175;
+		LineFollower->Max_speed_R = 175;
+		LineFollower->Sharp_bend_speed_right = -20;
+		LineFollower->Sharp_bend_speed_left = 110; //88
+		LineFollower->Bend_speed_right = -40;
+		LineFollower->Bend_speed_left = 80;
 		LineFollower->Kp = 0.015;
-		LineFollower->Kd = 0.175;//0.2
+		LineFollower->Kd = 0.08;//0.2
 	}
 	/*TRUBO mode*/
 	if(RxData == 'i')

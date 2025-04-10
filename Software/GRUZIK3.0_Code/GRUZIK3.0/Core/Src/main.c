@@ -69,7 +69,6 @@
 	/*MAP*/
 	#define CURVATURE_COMPENSATION 0
 	Map_t map;
-	float CurvatureSpeed;
 	/*FatFS variables*/
 	FRESULT FatFsResult;
 	FATFS SdFatFs;
@@ -200,16 +199,6 @@ int main(void)
   	GRUZIK.Bend_speed_right=-50;
   	GRUZIK.Bend_speed_left=110;
 
-//	#ifdef CURVATURE_COMPENSATION //TODO: to define dziala na odwrot zoba o co b
-//  	{
-//  		map.Kk = 0.01;//0.01
-//  	}
-//	#else
-//  	{
-//  		map.Kk = 0;
-//  	}
-//	#endif
-
   	map.Kk = 0;
 
 
@@ -259,6 +248,9 @@ int main(void)
 
     /*last sensor out of the tape timer*/
     LastEndTimer = HAL_GetTick();
+
+//    uint8_t TrackPart = 0;
+//    float DistansTraveled = 0;
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -268,6 +260,37 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+//	  DistansTraveled = (Motor_L.DistanceTraveled + Motor_R.DistanceTraveled)/4;
+//
+//	  if((TrackPart == 0) && (DistansTraveled > 0.9))// Distanse in meters
+//	  {
+//		  App_Controll('a', &GRUZIK);//High c
+//		  TrackPart++;
+//		   HAL_GPIO_WritePin(LED_4_GPIO_Port, LED_4_Pin, GPIO_PIN_RESET);
+//		    HAL_GPIO_WritePin(LED_3_GPIO_Port, LED_3_Pin, GPIO_PIN_RESET);
+//		    HAL_GPIO_WritePin(LED_2_GPIO_Port, LED_2_Pin, GPIO_PIN_RESET);
+//		    HAL_GPIO_WritePin(LED_1_GPIO_Port, LED_1_Pin, GPIO_PIN_RESET);
+//	  }
+//	  if((TrackPart == 1) && (DistansTraveled > 1.5))
+//	  {
+//		  App_Controll('d', &GRUZIK);//High+ f
+//		  TrackPart++;
+//		   HAL_GPIO_WritePin(LED_4_GPIO_Port, LED_4_Pin, GPIO_PIN_SET);
+//		    HAL_GPIO_WritePin(LED_3_GPIO_Port, LED_3_Pin, GPIO_PIN_SET);
+//		    HAL_GPIO_WritePin(LED_2_GPIO_Port, LED_2_Pin, GPIO_PIN_SET);
+//		    HAL_GPIO_WritePin(LED_1_GPIO_Port, LED_1_Pin, GPIO_PIN_SET);
+//	  }
+//	  if((TrackPart == 2) && (DistansTraveled > 2.5))
+//	  {
+//		  App_Controll('a', &GRUZIK);//High c
+//		  TrackPart++;
+//		   HAL_GPIO_WritePin(LED_4_GPIO_Port, LED_4_Pin, GPIO_PIN_RESET);
+//		    HAL_GPIO_WritePin(LED_3_GPIO_Port, LED_3_Pin, GPIO_PIN_RESET);
+//		    HAL_GPIO_WritePin(LED_2_GPIO_Port, LED_2_Pin, GPIO_PIN_RESET);
+//		    HAL_GPIO_WritePin(LED_1_GPIO_Port, LED_1_Pin, GPIO_PIN_RESET);
+//	  }
+
+
 	  PID_control();
 
 	  /*If there is a message form Bluetooth Parser it*/
@@ -365,24 +388,11 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	    Motor_CalculateSpeed(&Motor_R);
 	    Motor_CalculateSpeed(&Motor_L);
 
-// -- Encoder Data to SD card
-//		if(map.Mapping == 1)
-//		{
-//			//sprintf((char*)buffer_2, " %0.3f	%lu \n" ,HAL_GetTick(), Motor_R.current_speed);
-//			sprintf((char*)buffer_2, " %lu	%0.3f \n" ,HAL_GetTick(), Motor_R.current_speed);
-//			f_printf(&SdCardFile, (char*)buffer_2);
-//		}
-
-
 	    /*integration of Gyroscope data for Z axis*/
 //		MPU6050_Get_Accel_Scale(&myAccelScaled);
 //		MPU6050_Get_Gyro_Scale(&myGyroScaled);
 
 	   MapUpdate(&map, &Motor_L, &Motor_R);
-
-
-	   /*Speed adjustment for route curvature*/
-	   CurvatureSpeed = abs(map.Ki) * map.Kk;
 
 
 //
@@ -431,7 +441,7 @@ void motor_control (double pos_right, double pos_left)
 	{
 		if (pos_left < 0 )
 		{
-			Motor_L.set_speed = (pos_left * -1) - CurvatureSpeed;
+			Motor_L.set_speed = (pos_left * -1);
 			PI_Loop(&Motor_L);
 
 			__HAL_TIM_SET_COMPARE (&htim2, TIM_CHANNEL_4, (uint32_t)((ARR*Motor_L.speed) * GRUZIK.Speed_level));//PWM_L
@@ -441,7 +451,7 @@ void motor_control (double pos_right, double pos_left)
 		}
 		else
 		{
-			Motor_L.set_speed = pos_left - CurvatureSpeed;
+			Motor_L.set_speed = pos_left;
 			PI_Loop(&Motor_L);
 
 			__HAL_TIM_SET_COMPARE (&htim2, TIM_CHANNEL_4, (uint32_t)((ARR*Motor_L.speed) * GRUZIK.Speed_level));//PWM_L
@@ -450,7 +460,7 @@ void motor_control (double pos_right, double pos_left)
 		}
 		if (pos_right < 0 )
 		{
-			Motor_R.set_speed = (pos_right * -1) - CurvatureSpeed;
+			Motor_R.set_speed = (pos_right * -1);
 			PI_Loop(&Motor_R);
 
 			__HAL_TIM_SET_COMPARE (&htim2, TIM_CHANNEL_1, (uint32_t)((ARR*Motor_R.speed) * GRUZIK.Speed_level));//PWM_R
@@ -459,7 +469,7 @@ void motor_control (double pos_right, double pos_left)
 		}
 		else
 		{
-			Motor_R.set_speed = pos_right - CurvatureSpeed;
+			Motor_R.set_speed = pos_right;
 			PI_Loop(&Motor_R);
 
 			__HAL_TIM_SET_COMPARE (&htim2, TIM_CHANNEL_1, (uint32_t)((ARR*Motor_R.speed) * GRUZIK.Speed_level));//PWM_R

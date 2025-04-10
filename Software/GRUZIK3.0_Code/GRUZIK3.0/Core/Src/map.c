@@ -25,27 +25,10 @@ extern FIL SdCardFile;
 //-- Line Follower -- //
 extern LineFollower_t GRUZIK;
 
-//static float MapWayPointSpeed(int i)
-//{
-//	if(i == 0)
-//	{
-//		return 1.0;
-//	}
-//	else if((i % 2) == 0)
-//	{
-//		return 1.0;
-//	}
-//	else
-//	{
-//		return 0.5;
-//	}
-//}
-
 void MapUpdate(Map_t *map, motor_t *MotorLeft, motor_t *MotorRight)
 {
 	if(map->Mapping == 1)
 	{
-		//static int i;
 		uint8_t buffer[100];
 
 		//(3.1) -- Save XY
@@ -86,21 +69,6 @@ void MapUpdate(Map_t *map, motor_t *MotorLeft, motor_t *MotorRight)
 		{
 			map->Ki = dAi / Ti;
 		}
-
-
-		//(x,y) WayPoint speed levels
-//		map->WayPointError = sqrt(pow(map->WayPoint[0][i]- map->Xri, 2) + pow(map->WayPoint[1][i]- map->Yri, 2));
-//		if(map->WayPointError < 0.03) // 3cm
-//		{
-//			map->WayPointSpeedCompensation  = MapWayPointSpeed(i);
-//			i++;
-//		}
-
-		//(x,y) Stop if you hit (0,0) again
-//		if((sqrt(pow(0 - map->Xri, 2) + pow(0 - map->Yri, 2)) < 0.2) && (MotorLeft->DistanceTraveled > 0.35))
-//		{
-//			App_Controll('N', &GRUZIK); // TODO: dostosuj dystans wyłączenia
-//		}
 
 		sprintf((char*)buffer, " %0.3f	%0.3f	%0.3f	%0.3f	%0.3f	%0.3f \n", map->Xri, map->Yri, map->Pci[0], map->Pci[1], map->Ori, map->Ki);
 		f_printf(&SdCardFile, (char*)buffer);
