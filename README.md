@@ -34,10 +34,10 @@
 - IMU - MPU-6050
 
 ## 🗺️ Mapping 🗺️
-> **GRUZIK3.0 is able to record it's route and save it on uSD card. Results can be represented as XY map and in future will be used to optimize the track**
+> **GRUZIK3.0 is able to record it's route and save it on uSD card. Results can be represented as XY map and optimized by Python algorithm in future robot will be able to recreate optimized map in real world**
 
 <div align="center">
-<img src="https://github.com/user-attachments/assets/3380e373-49cb-4409-96b3-cbfbdf068092" width="700"/>
+<img src="https://github.com/user-attachments/assets/18242b17-37ce-4c15-9051-c7a22aeaf0d6" width="700"/>
 </div>
 
 ## 📱Bluetooth Apps 📱
