@@ -1,4 +1,4 @@
-<h1 align="center">GRUZIK2.0: Line Follower Robot</h1>
+<h1 align="center">GRUZIK3.0: Line Follower Robot</h1>
 
 <div align="center">
 
