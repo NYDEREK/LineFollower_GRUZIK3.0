@@ -34,7 +34,7 @@
 - IMU - MPU-6050
 
 ## 🗺️ Mapping 🗺️
-> **GRUZIK3.0 is able to record it's route and save it on uSD card. Results can be represented as XY map and optimized by Python algorithm in future robot is able to recreate optimized map in real world achieving max speed for the given route**
+> **GRUZIK3.0 is able to record it's route and save it on uSD card. Results can be represented as XY map and optimized by Python algorithm, robot is able to recreate optimized map in real world achieving max speed for the given route**
 
 <div align="center">
 <img src="https://github.com/user-attachments/assets/df6ee6c3-2aab-4b90-810a-3647e3680202" width="700"/>
