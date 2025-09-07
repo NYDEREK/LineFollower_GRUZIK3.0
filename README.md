@@ -11,7 +11,7 @@
 > **GRUZIK2.0 is a lightweight construction (69g) designed for the "Line Follower Light" competition. The robot features Bluetooth communication with a smartphone app and uses a digital sensor instead of analog.**
 
 <div align="center">
-  <img src="https://github.com/user-attachments/assets/63200922-e15a-459f-a8ef-eff7e73a7a39" width="700"/>
+  <img src="https://github.com/user-attachments/assets/dc5d3332-ec1f-4ac1-ab5d-26fb2624dbcc" width="700"/>
 </div>
 
 ## Hardware
@@ -37,7 +37,7 @@
 > **GRUZIK3.0 is able to record it's route and save it on uSD card. Results can be represented as XY map and optimized by Python algorithm in future robot will be able to recreate optimized map in real world**
 
 <div align="center">
-<img src="https://github.com/user-attachments/assets/18242b17-37ce-4c15-9051-c7a22aeaf0d6" width="700"/>
+<img src="https://github.com/user-attachments/assets/df6ee6c3-2aab-4b90-810a-3647e3680202" width="700"/>
 </div>
 
 ## 📱Bluetooth Apps 📱
