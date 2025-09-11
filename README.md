@@ -60,5 +60,5 @@
  
 - Mapping and optimizing Paths
 
-- Improved my skills with PCB design
+- Improved my PCB design skills (KiCAD)
  
