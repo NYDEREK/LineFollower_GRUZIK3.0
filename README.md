@@ -59,4 +59,6 @@
 - Encoder implementation with PI speed regulator on motors
  
 - Mapping and optimizing Paths
+
+- Improved my skills with PCB design
  
