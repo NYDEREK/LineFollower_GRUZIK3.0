@@ -48,7 +48,3 @@
   <img src="https://github.com/user-attachments/assets/7bbf09f1-de58-4a54-b960-737331f7caec" width="200"/>
   <img src="https://github.com/user-attachments/assets/04cf68f1-61b6-4069-b168-2889a54eaaf8" width="200"/>
 </div>
-
-## Credits
-
-> <i>**I implemented the PD controller in my project, drawing inspiration from Bilal Kabas' repository available at - https://github.com/sametoguten/STM32-Line-Follower-with-PID with MIT License - [MIT License](LICENSE)**<i>
