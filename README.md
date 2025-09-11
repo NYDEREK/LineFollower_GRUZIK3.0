@@ -48,3 +48,15 @@
   <img src="https://github.com/user-attachments/assets/7bbf09f1-de58-4a54-b960-737331f7caec" width="200"/>
   <img src="https://github.com/user-attachments/assets/04cf68f1-61b6-4069-b168-2889a54eaaf8" width="200"/>
 </div>
+
+## What I have learned 
+> **This project wasn't easy but I learned a lot new things in software and hardware. I had a lot of failures during this project but I have never gave up and always kept pushing my own limits.**
+
+- I mastered PID controll
+ 
+- IMU implemantation 
+ 
+- Encoder implementation with PI speed regulator on motors
+ 
+- Mapping and optimizing Paths
+ 
