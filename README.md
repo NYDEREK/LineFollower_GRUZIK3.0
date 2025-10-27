@@ -10,7 +10,7 @@
 
 > **GRUZIK2.0 is a lightweight construction (69g) designed for the "Line Follower Light" competition. The robot features Bluetooth communication with a smartphone app and uses a digital sensor instead of analog.**
 
-> **here is a quick video of current progres with GRUZIK3.0 and "Photon" (photon was made with my friend togother) https://www.youtube.com/watch?v=3A3KgRZa52w**
+> **here is a quick video of current progres with GRUZIK3.0 - https://www.youtube.com/watch?v=DpuIcFJMwbQ**
 <div align="center">
   <img src="https://github.com/user-attachments/assets/dc5d3332-ec1f-4ac1-ab5d-26fb2624dbcc" width="700"/>
 </div>
