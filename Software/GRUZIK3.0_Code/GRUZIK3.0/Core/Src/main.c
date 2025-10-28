@@ -61,6 +61,9 @@
 	/*Defines*/
 //	#define true 1;
 //	#define false 0;
+
+	//uint8_t DrivingOnMap = 1;
+	uint8_t SDReadingReady = 0;
 	#define ENDLINE '\n'
 
 	/*Sensor*/
@@ -81,6 +84,7 @@
 	MPU_ConfigTypeDef myMpuConfig;
 
 	float Yaw;
+	float Orientation;
 
 	/*Encoders*/
 	#define PI_MOTOR_SPEED_REGULATION 1
@@ -183,21 +187,35 @@ int main(void)
   /* USER CODE BEGIN 2 */
   	HAL_ADC_Start_DMA(&hadc1, (uint32_t*)&GRUZIK.Adc_Value, 1);
 
+  	/*Initial values for driving on Optimized route*/
+  	map.p = 0.14;//0.14
+  	map.i = 0;
+  	map.d = 14;//14
+
+  	GRUZIK.DrivingOnMap = 0;
+
   	/*Set initial values for PID*/
-    GRUZIK.Kp = 0.02;
-  	GRUZIK.Kd = 0.1;
+    GRUZIK.Kp = 0.015;
+  	GRUZIK.Kd = 0.085;
   	GRUZIK.Speed_offset = 0.014;
 
-  	GRUZIK.Base_speed_R = 120;
-  	GRUZIK.Base_speed_L = 120;
-  	GRUZIK.Max_speed_R = 120;
-  	GRUZIK.Max_speed_L = 120;
+  	if(GRUZIK.DrivingOnMap)
+  	{
+		GRUZIK.Kp = map.p;
+		GRUZIK.Kd = map.d;
+		GRUZIK.Base_speed_R = map.i;
+  	}
+
+  	GRUZIK.Base_speed_R = 80;
+  	GRUZIK.Base_speed_L = 80;
+  	GRUZIK.Max_speed_R = 80;
+  	GRUZIK.Max_speed_L = 80;
 
   	/*Sharp turn speed*/
-  	GRUZIK.Sharp_bend_speed_right=-70;
-  	GRUZIK.Sharp_bend_speed_left=85;
-  	GRUZIK.Bend_speed_right=-50;
-  	GRUZIK.Bend_speed_left=110;
+  	GRUZIK.Sharp_bend_speed_right= -40;
+  	GRUZIK.Sharp_bend_speed_left= 85;
+  	GRUZIK.Bend_speed_right= -50;
+  	GRUZIK.Bend_speed_left= 90;
 
   	map.Kk = 0;
 
@@ -220,9 +238,28 @@ int main(void)
 
     /*SD Card file initialization*/
     FatFsResult = f_mount(&SdFatFs, "", 1);
-    FatFsResult = f_open(&SdCardFile, "GRUZIK.txt", FA_WRITE|FA_OPEN_APPEND);
-    //TODO: czy trzba to tu otwierać czy mozna miec wywalone | A moze otworzyc i zamknać (stworzyc plik)
-
+    if(GRUZIK.DrivingOnMap != 1)
+    {
+    	while(!SDReadingReady)
+    	{
+    		FatFsResult = f_open(&SdCardFile, "GRUZIK.txt", FA_WRITE|FA_OPEN_APPEND);
+    		if(FatFsResult == FR_OK)
+    		{
+    			SDReadingReady = 1;
+    		}
+    	}
+    }
+    else
+    {
+    	while(!SDReadingReady)
+    	{
+    		FatFsResult = f_open(&SdCardFile, "map.txt", FA_READ);
+    		if(FatFsResult == FR_OK)
+    		{
+    			SDReadingReady = 1;
+    		}
+    	}
+    }
 	/*Start timers and PWM on channels*/
 	HAL_TIM_Base_Start_IT(&htim3);
 	HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);//right pwm
@@ -230,15 +267,15 @@ int main(void)
 
 	/*IMU initialization*/
 	//1. Initialize the MPU6050 module and I2C
-//	MPU6050_Init(&hi2c3);
-//
-//	//2. Configure parameters
-//	myMpuConfig.Accel_Full_Scale = AFS_SEL_16g;
-//	myMpuConfig.ClockSource = Internal_8MHz;
-//	myMpuConfig.CONFIG_DLPF = DLPF_184A_188G_Hz;
-//	myMpuConfig.Gyro_Full_Scale = FS_SEL_500;
-//	myMpuConfig.Sleep_Mode_Bit = 0;  //1: sleep mode, 0: normal mode
-//	MPU6050_Config(&myMpuConfig);
+	MPU6050_Init(&hi2c3);
+
+	//2. Configure parameters
+	myMpuConfig.Accel_Full_Scale = AFS_SEL_16g;
+	myMpuConfig.ClockSource = Internal_8MHz;
+	myMpuConfig.CONFIG_DLPF = DLPF_184A_188G_Hz;
+	myMpuConfig.Gyro_Full_Scale = FS_SEL_2000;
+	myMpuConfig.Sleep_Mode_Bit = 0;  //1: sleep mode, 0: normal mode
+	MPU6050_Config(&myMpuConfig);
 
     /*LED diodes initial set*/
     HAL_GPIO_WritePin(LED_4_GPIO_Port, LED_4_Pin, GPIO_PIN_SET);
@@ -246,11 +283,6 @@ int main(void)
     HAL_GPIO_WritePin(LED_2_GPIO_Port, LED_2_Pin, GPIO_PIN_SET);
     HAL_GPIO_WritePin(LED_1_GPIO_Port, LED_1_Pin, GPIO_PIN_SET);
 
-    /*last sensor out of the tape timer*/
-    LastEndTimer = HAL_GetTick();
-
-//    uint8_t TrackPart = 0;
-//    float DistansTraveled = 0;
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -260,47 +292,11 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-//	  DistansTraveled = (Motor_L.DistanceTraveled + Motor_R.DistanceTraveled)/4;
-//
-//	  if((TrackPart == 0) && (DistansTraveled > 0.9))// Distanse in meters
-//	  {
-//		  App_Controll('a', &GRUZIK);//High c
-//		  TrackPart++;
-//		   HAL_GPIO_WritePin(LED_4_GPIO_Port, LED_4_Pin, GPIO_PIN_RESET);
-//		    HAL_GPIO_WritePin(LED_3_GPIO_Port, LED_3_Pin, GPIO_PIN_RESET);
-//		    HAL_GPIO_WritePin(LED_2_GPIO_Port, LED_2_Pin, GPIO_PIN_RESET);
-//		    HAL_GPIO_WritePin(LED_1_GPIO_Port, LED_1_Pin, GPIO_PIN_RESET);
-//	  }
-//	  if((TrackPart == 1) && (DistansTraveled > 1.5))
-//	  {
-//		  App_Controll('d', &GRUZIK);//High+ f
-//		  TrackPart++;
-//		   HAL_GPIO_WritePin(LED_4_GPIO_Port, LED_4_Pin, GPIO_PIN_SET);
-//		    HAL_GPIO_WritePin(LED_3_GPIO_Port, LED_3_Pin, GPIO_PIN_SET);
-//		    HAL_GPIO_WritePin(LED_2_GPIO_Port, LED_2_Pin, GPIO_PIN_SET);
-//		    HAL_GPIO_WritePin(LED_1_GPIO_Port, LED_1_Pin, GPIO_PIN_SET);
-//	  }
-//	  if((TrackPart == 2) && (DistansTraveled > 2.5))
-//	  {
-//		  App_Controll('a', &GRUZIK);//High c
-//		  TrackPart++;
-//		   HAL_GPIO_WritePin(LED_4_GPIO_Port, LED_4_Pin, GPIO_PIN_RESET);
-//		    HAL_GPIO_WritePin(LED_3_GPIO_Port, LED_3_Pin, GPIO_PIN_RESET);
-//		    HAL_GPIO_WritePin(LED_2_GPIO_Port, LED_2_Pin, GPIO_PIN_RESET);
-//		    HAL_GPIO_WritePin(LED_1_GPIO_Port, LED_1_Pin, GPIO_PIN_RESET);
-//	  }
-
-
-	  PID_control();
-
-	  /*If there is a message form Bluetooth Parser it*/
-	  if(ReceivedLines > 0)
+	  if(GRUZIK.DrivingOnMap == 0)
 	  {
-		  Parser_TakeLine(&ReceiveBuffer, ReceivedData);
-		  Parser_Parse(ReceivedData,&GRUZIK);
-
-		  ReceivedLines--;
+		  PID_control();
 	  }
+
   }
   /* USER CODE END 3 */
 }
@@ -389,23 +385,53 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	    Motor_CalculateSpeed(&Motor_L);
 
 	    /*integration of Gyroscope data for Z axis*/
-//		MPU6050_Get_Accel_Scale(&myAccelScaled);
-//		MPU6050_Get_Gyro_Scale(&myGyroScaled);
+	    MPU6050_Get_Accel_Scale(&myAccelScaled);
+	    MPU6050_Get_Gyro_Scale(&myGyroScaled);
 
-	   MapUpdate(&map, &Motor_L, &Motor_R);
+	    //map.OriIMU = (((myGyroScaled.z * YAW_MEASUREMENT_PERIOD) - 0.00095)* 0.01745329251f) * 1.3325;//1.03325
+	   // MapUpdate(&map, &Motor_L, &Motor_R);
+	    Orientation += map.OriIMU / 0.01745329251f;
 
+		if(GRUZIK.blockinterrups == 0)
+		{
+			if((GRUZIK.DrivingOnMap == 1)&&(SDReadingReady == 1))     // 0.0015
+			{                                                         // 0.00095
+			  map.OriIMU = (((myGyroScaled.z * YAW_MEASUREMENT_PERIOD) - 0.001)* 0.01745329251f) * 1;//1.03325
+			  DriveOnMap(&map, &Motor_L, &Motor_R);
+			}
+			else if((GRUZIK.DrivingOnMap == 0)&&(SDReadingReady == 1))
+			{
+			  map.OriIMU = (((myGyroScaled.z * YAW_MEASUREMENT_PERIOD) + 0.0008)* 0.01745329251f) * 1.2705f;//1.3325 // zwiększenie zamyka trase
+			  MapUpdate(&map, &Motor_L, &Motor_R);                     //- 0.0065                    1.273
+			}
+																		//- 0.0065                    1.271
+																		//- 0.00625                   1.2705
+			else if((GRUZIK.DrivingOnMap == 2) && (SDReadingReady == 1))
+			{
+				map.OriIMU = (((myGyroScaled.z * YAW_MEASUREMENT_PERIOD) - 0.001)* 0.01745329251f) * 1;//1.03325
+				 MappingV2(&map, &Motor_L, &Motor_R);
+			}
 
-//
-//	    Yaw = Yaw + myGyroScaled.z * YAW_MEASUREMENT_PERIOD;
-//
-//	    if(Yaw > 180)
-//	    {
-//	    	Yaw = -180;
-//	    }
-//	    if(Yaw < -180)
-//	    {
-//	    	Yaw = 180;
-//	    }
+		}
+
+		  /*If there is a message form Bluetooth Parser it*/
+		  if(ReceivedLines > 0)
+		  {
+			  Parser_TakeLine(&ReceiveBuffer, ReceivedData);
+			  Parser_Parse(ReceivedData,&GRUZIK);
+
+			  ReceivedLines--;
+		  }
+		  /*After one cycle of un-mapping drive slowly with route for 2s and then stop*/
+		  if(GRUZIK.UnMappingDone == 1)
+		  {
+			  if(HAL_GetTick() >= (GRUZIK.DoneUnMappingTimer + 1750))
+			  {
+					HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, GPIO_PIN_RESET);
+					HAL_GPIO_WritePin(GPIOC, GPIO_PIN_5, GPIO_PIN_RESET);
+					HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, GPIO_PIN_RESET);
+			  }
+		  }
 	}
 }
 /*Functions*/
@@ -595,7 +621,7 @@ int QTR8_read ()
 //			 sensory[8],sensory[9],sensory[10],sensory[11]);
 //	 HAL_UART_Transmit(&hlpuart1, Message, strlen((char*)Message), 100);
 
-	Sensors_read = 0x00000000;
+	Sensors_read = 0x000000000000;
 	int pos = 0;
   int active = 0;
 
@@ -608,6 +634,7 @@ int QTR8_read ()
 			LastEndTimer = HAL_GetTick();
 			Last_end = 1;
 		}
+
 	}
 	if (HAL_GPIO_ReadPin(SENSOR2_GPIO_Port, SENSOR2_Pin)) {
 		Sensors_read |= 0x000000000010;
@@ -664,16 +691,17 @@ int QTR8_read ()
     active++;
 	  // Last_end = 0;//0
   }
-  if (HAL_GPIO_ReadPin(SENSOR12_GPIO_Port, SENSOR12_Pin)) { // RIGH SIDE
+  if (HAL_GPIO_ReadPin(SENSOR12_GPIO_Port, SENSOR12_Pin)) { // RIGHT SIDE
 	   Sensors_read |= 0x100000000000;
 	   pos += 12000 * SENSOR_SCALE;//8000
        active++;
 
-        if(HAL_GetTick() > (LastEndTimer + 50))
+        if(HAL_GetTick() > (LastEndTimer + 50))//50
 		{
 			LastEndTimer = HAL_GetTick();
 			Last_end = 0;
 		}
+
   }
 
   HAL_GPIO_WritePin(LEDON_GPIO_Port, LEDON_Pin, 0);
@@ -725,8 +753,10 @@ void PID_control()
   past_errors(error);
 
   P = error;
+  GRUZIK.Error_P = P;
   I = errors_sum(5, 0);
   D = error - Last_error;
+  GRUZIK.Error_D = D;
   R = errors_sum(5, 1);
   Last_error = error;
 
@@ -758,8 +788,7 @@ void Error_Handler(void)
   }
   /* USER CODE END Error_Handler_Debug */
 }
-
-#ifdef  USE_FULL_ASSERT
+#ifdef USE_FULL_ASSERT
 /**
   * @brief  Reports the name of the source file and the source line number
   *         where the assert_param error has occurred.

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<section name="Workbench">
+	<section name="WorkbenchPreferenceDialog">
+		<item key="DIALOG_X_ORIGIN" value="569"/>
+		<item key="DIALOG_Y_ORIGIN" value="196"/>
+		<item key="DIALOG_WIDTH" value="798"/>
+		<item key="DIALOG_HEIGHT" value="582"/>
+		<item key="DIALOG_FONT_NAME" value="1|Segoe UI|9.0|0|WINDOWS|1|-12|0|0|0|400|0|0|0|1|0|0|0|0|Segoe UI"/>
+	</section>
+	<section name="WorkbenchPreferenceDialog.dialogBounds">
+		<item key="DIALOG_X_ORIGIN" value="569"/>
+		<item key="DIALOG_Y_ORIGIN" value="136"/>
+		<item key="DIALOG_WIDTH" value="798"/>
+		<item key="DIALOG_HEIGHT" value="583"/>
+		<item key="DIALOG_FONT_NAME" value="1|Segoe UI|9.0|0|WINDOWS|1|-12|0|0|0|400|0|0|0|1|0|0|0|0|Segoe UI"/>
+	</section>
+</section>

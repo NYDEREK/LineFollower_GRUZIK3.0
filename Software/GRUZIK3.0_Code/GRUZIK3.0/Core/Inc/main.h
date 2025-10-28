@@ -53,7 +53,7 @@ extern "C" {
 void Error_Handler(void);
 
 /* USER CODE BEGIN EFP */
-
+void motor_control (double pos_right, double pos_left);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/

@@ -25,6 +25,82 @@ extern FIL SdCardFile;
 /*MAP*/
 extern Map_t map;
 
+//void MappingMode_change(LineFollower_t *LF)
+//{
+//	char *ParsePointer = strtok(NULL, ",");
+//
+//	if(strlen(ParsePointer) > 0 && strlen(ParsePointer) < 32)
+//	{
+//		/*Get value 0 or 1*/
+//		if(atoi(ParsePointer) < 2)
+//		{
+//			LF->DrivingOnMap = atoi(ParsePointer);
+//		}
+//		else
+//		{
+//			return;
+//		}
+//	}
+//	/*Close the file and block reading of SD card for a moment*/
+//	LF->blockinterrups = 1;
+//	FatFsResult = f_close(&SdCardFile);
+//	FatFsResult = f_mount(NULL, "", 1);
+//
+//	//HAL_Delay(200);
+//
+//	FatFsResult = f_mount(&SdFatFs, "", 1);
+//
+//	/*if we want to read route from map we should open file with it */
+//	if(LF->DrivingOnMap == 1)
+//	{
+//		map.Mapping = 0;
+//		int SDReadingReady = 0;
+//
+//    	while(!SDReadingReady)
+//    	{
+//    		FatFsResult = f_open(&SdCardFile, "map.txt", FA_READ);
+//    		if(FatFsResult == FR_OK)
+//    		{
+//    			SDReadingReady = 1;
+//    			LF->blockinterrups = 0;
+//    			/*Toggle LEDs*/
+//    			HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_6);
+//    			HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_5);
+//    			return;
+//    		}
+//    		else
+//    		{
+//    			FatFsResult = f_close(&SdCardFile);
+//    		}
+//    	}
+//
+//	}
+//	/*if we want to map the route we should open file for it */
+//	else
+//	{
+//		int SDReadingReady = 0;
+//
+//    	while(!SDReadingReady)
+//    	{
+//    		FatFsResult = f_open(&SdCardFile, "GRUZIK.txt", FA_WRITE|FA_OPEN_APPEND);
+//    		if(FatFsResult == FR_OK)
+//    		{
+//    			SDReadingReady = 1;
+//    			LF->blockinterrups = 0;
+//    			/*Toggle LEDs*/
+//    			HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_6);
+//    			HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_5);
+//    			return;
+//    		}
+//    		else
+//    		{
+//    			FatFsResult = f_close(&SdCardFile);
+//    		}
+//    	}
+//
+//	}
+//
+//}
 void Parser_TakeLine(RingBuffer_t *Buf, uint8_t *ReceivedData)
 {
 	uint8_t Tmp;
@@ -189,30 +265,58 @@ void App_Controll(char RxData, LineFollower_t *LineFollower)
 		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, GPIO_PIN_SET);
 
 		/*Start mapping the track*/
-		FatFsResult = f_open(&SdCardFile, "GRUZIK.txt", FA_WRITE|FA_OPEN_APPEND);
-		map.Mapping = 1;
+//	    if(LineFollower->DrivingOnMap != 1)
+//	    {
+//	    	FatFsResult = f_close(&SdCardFile);
+//	    	while(!map.Mapping)
+//	    	{
+//	    		FatFsResult = f_open(&SdCardFile, "GRUZIK.txt", FA_WRITE|FA_OPEN_APPEND);
+//	    		if(FatFsResult == FR_OK)
+//	    		{
+//	    			map.Mapping = 1;
+//	    		}
+//	    		else
+//	    		{
+//	    			FatFsResult = f_close(&SdCardFile);
+//	    		}
+//	    	}
+//	    	FatFsResult = f_open(&SdCardFile, "GRUZIK.txt", FA_WRITE|FA_OPEN_APPEND);
+//	    	map.Mapping = 1;
+//	    }
+//	    else
+//	    {gf
+//	    	FatFsResult = f_open(&SdCardFile, "map.txt", FA_READ);
+//	    }
+//		FatFsResult = f_close(&SdCardFile);
+//		HAL_Delay(1000);
+		if(LineFollower->DrivingOnMap == 0)
+		{
+			FatFsResult = f_open(&SdCardFile, "GRUZIK.txt", FA_WRITE|FA_OPEN_APPEND);
+			map.Mapping = 1;
+		}
+		map.Ori = 0;
 	}
 	/*LOW mode*/
 	if(RxData == 'a')
 	{
-		LineFollower->Base_speed_R = 85;
+		LineFollower->Base_speed_R = 85;//85
 		LineFollower->Base_speed_L = 85;
-		LineFollower->Max_speed_L = 100;
-		LineFollower->Max_speed_R = 100;
-		LineFollower->Sharp_bend_speed_right = -70;
-		LineFollower->Sharp_bend_speed_left = 70;
+		LineFollower->Max_speed_L = 165;//100
+		LineFollower->Max_speed_R = 165;
+		LineFollower->Sharp_bend_speed_right = -40;
+		LineFollower->Sharp_bend_speed_left = 90;
 		LineFollower->Bend_speed_right = -50;
 		LineFollower->Bend_speed_left = 80;
 		LineFollower->Kp = 0.015;
-		LineFollower->Kd = 0.07;
+		LineFollower->Kd = 0.085;
 	}
 	/*LOW+ mode*/
 	if(RxData == 'd')
 	{
 		LineFollower->Base_speed_R = 95;
 		LineFollower->Base_speed_L = 95;
-		LineFollower->Max_speed_L = 140; // (120->150)
-		LineFollower->Max_speed_R = 140;
+		LineFollower->Max_speed_L = 150; // (120->150)//150
+		LineFollower->Max_speed_R = 150;
 		LineFollower->Sharp_bend_speed_right = -30;
 		LineFollower->Sharp_bend_speed_left = 100;
 		LineFollower->Bend_speed_right = -40;
@@ -488,6 +592,10 @@ void Parser_Parse(uint8_t *ReceivedData, LineFollower_t *LineFollower)
 	else if(!strcmp("Bend_speed_left",ParsePointer))
 	{
 		Bend_speed_left_change(LineFollower);
+	}
+	else if(!strcmp("Treshold",ParsePointer))
+	{
+		//MappingMode_change(LineFollower);
 	}
 	else if(!strcmp("Mode",ParsePointer))
 	{

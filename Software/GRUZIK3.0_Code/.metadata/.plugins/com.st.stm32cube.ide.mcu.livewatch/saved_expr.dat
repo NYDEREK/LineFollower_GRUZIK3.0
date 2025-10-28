@@ -3,9 +3,3 @@ Motor_L.RPM
 Motor_L
 Motor_L.MetersPerSecond
 Motor_R.MetersPerSecond
-Motor_R
-Yaw
-lsm6ds3.RawGz
-lsm6ds3
-myGyroScaled
-FatFsResult

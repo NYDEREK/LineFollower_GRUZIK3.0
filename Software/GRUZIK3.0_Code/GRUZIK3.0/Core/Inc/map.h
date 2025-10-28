@@ -33,7 +33,8 @@ typedef struct {
 	///
 	float Xri, PreviousXri;
 	float Yri, PreviousYri;
-	float Ori, PreviousOri;
+	float Ori, PreviousOri, OriIMU;
+	float AlhphaOri;
 	///
 	float Qri[3]; //(Xri, Yri, Ori)
 	float Pci[2], PreviousPci[2];
@@ -42,9 +43,24 @@ typedef struct {
 	float Ai , PreviousAi;
 	float Ki;
 
+	/// - driving on map
+	float SetX;
+	float SetY;
+	float SetRotation;
+	float SetSpeed;
+
+	//PID
+	float p;
+	float i;
+	float d;
+	float ErrorSum;
+	float LastError;
+	float mi;
+
 } Map_t;
 
 //Methods
 void MapUpdate(Map_t *map, motor_t *MotorLeft, motor_t *MotorRight);
-
+void DriveOnMap(Map_t *map, motor_t *MotorLeft, motor_t *MotorRight);
+void MappingV2(Map_t *map, motor_t *MotorLeft, motor_t *MotorRight);
 #endif /* INC_MAP_H_ */

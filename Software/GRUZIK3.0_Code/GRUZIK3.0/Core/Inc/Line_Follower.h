@@ -12,6 +12,8 @@ typedef struct
 {
 	float Kp;
 	float Kd;
+	float Error_P;
+	float Error_D;
 
 	int Base_speed_R;
 	int Base_speed_L;
@@ -27,6 +29,12 @@ typedef struct
 	uint16_t Adc_Value;
 	float Speed_level;
 	float Speed_offset;
+
+	uint8_t DrivingOnMap;
+	uint8_t blockinterrups;
+
+	uint32_t DoneUnMappingTimer;
+	uint8_t UnMappingDone;
 
 } LineFollower_t;
 
