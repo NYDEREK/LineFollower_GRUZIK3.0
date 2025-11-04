@@ -1,0 +1,257 @@
+/*
+ * map.c
+ *
+ *  Created on: Mar 5, 2025
+ *      Author: Szymon Nyderek
+ */
+
+#include "main.h"
+#include "string.h"
+#include "stdlib.h"
+#include "stdio.h"
+#include "map.h"
+#include "Line_Follower.h"
+#include "motor.h"
+#include "math.h"
+#include "app_fatfs.h"
+#include "SimpleParser.h"
+#include "Line_Follower.h"
+
+// -- SD card -- //
+extern LineFollower_t GRUZIK;
+extern FRESULT FatFsResult;
+extern FATFS SdFatFs;
+extern FIL SdCardFile;
+
+//-- Line Follower -- //
+extern LineFollower_t GRUZIK;
+
+void MapUpdate(Map_t *map, motor_t *MotorLeft, motor_t *MotorRight)
+{
+	if(map->Mapping == 1)
+	{
+		map->AlhphaOri = 1; //100% IMU 0% encoders
+		uint8_t buffer[100];
+
+		//(3.1) -- Save XY
+		map->PreviousXri = map->Xri;
+		map->PreviousYri = map->Yri;
+
+		map->PreviousPci[0] = map->Pci[0];
+		map->PreviousPci[1] = map->Pci[1];
+
+		//(2.11) -- Translation In Measurement
+		float Ti = (MotorLeft->LpfDistanceInMeasurement + MotorRight->LpfDistanceInMeasurement) / 2;
+		//(2.12) -- Rotation In Measurement
+		float Ri = (MotorRight->LpfDistanceInMeasurement - MotorLeft->LpfDistanceInMeasurement) / (MAIN_PCB_LENGTH * 2 * 1.085);//1.085
+
+		//(2.13) -- Main PCB Position
+		map->Ori = map->Ori + (((1-map->AlhphaOri)*Ri) + (map->OriIMU * map->AlhphaOri));
+		map->Xri = map->Xri + ((Ti * cosf(map->Ori))/2);
+		map->Yri = map->Yri + ((Ti * sinf(map->Ori)))/2;
+
+		//(2.17) -- Sensor Position
+		map->Pci[0] = map->Xri + (MAIN_TO_SENSOR_LENGTH * cosf(map->Ori));
+		map->Pci[1] = map->Yri + (MAIN_TO_SENSOR_LENGTH * sinf(map->Ori));
+
+		//Curvature of the route for sensor
+		//(3.1) & (3.2)
+		float dx = map->Pci[0] - map->PreviousPci[0];
+		float dy = map->Pci[1] - map->PreviousPci[1];
+		Ti = sqrt(pow(dx, 2) + pow(dy, 2));
+		map->Si = map->Si + Ti;
+
+		//(3.3)
+		map->PreviousAi = map->Ai;
+		map->Ai = atan2(dy,dx);
+
+		//(3.4) & (3.5)
+		float dAi = map->Ai - map->PreviousAi;
+		if(Ti != 0)
+		{
+			map->Ki = dAi / Ti;
+		}
+
+		sprintf((char*)buffer, " %0.3f	%0.3f	%0.3f	%0.3f	%0.3f	%0.3f	%0.3f \n", map->Xri, map->Yri, map->Pci[0], map->Pci[1], (map->Ori / 0.01745329251f), GRUZIK.Error_P,GRUZIK.Error_D);
+		f_printf(&SdCardFile, (char*)buffer);
+	}
+}
+float normalize_angle(float angle)
+{
+    while (angle >  M_PI) angle -= 2.0f * M_PI;
+    while (angle <= -M_PI) angle += 2.0f * M_PI;
+    return angle;
+}
+static void ReadMapLine(Map_t *map)
+{
+
+	if(FatFsResult != FR_OK)
+	{
+		//Send message about problem with sd card
+	}
+	else
+	{
+		// 1 is how many chars do we want to read
+		//idea is to read one line we have to search for /n
+		UINT len;
+		uint8_t data[32];
+		uint8_t sample;
+		uint8_t i = 0;
+		do
+		{
+			f_read(&SdCardFile, &sample, 1, &len);
+			/*If there is no points in map file then stop the robot*/
+			if(len == 0)
+			{
+				/*For next 3s drive slowly using PID because map is done*/
+				map->Mapping = 0;
+				GRUZIK.DrivingOnMap = 0;
+				GRUZIK.UnMappingDone = 1;
+				GRUZIK.blockinterrups = 1; // blocks un-mapping and mapping
+
+				/*Set values for PID*/
+				GRUZIK.Kp = 0.015;
+				GRUZIK.Kd = 0.085;
+
+				GRUZIK.Base_speed_R = 25;
+				GRUZIK.Base_speed_L = 25;
+				GRUZIK.Max_speed_R = 25;
+				GRUZIK.Max_speed_L = 25;
+
+				/*Sharp turn speed*/
+				GRUZIK.Sharp_bend_speed_right= -40;
+				GRUZIK.Sharp_bend_speed_left= 85;
+				GRUZIK.Bend_speed_right= -50;
+				GRUZIK.Bend_speed_left= 90;
+
+				GRUZIK.DoneUnMappingTimer = HAL_GetTick();
+
+				/*From now only reset of the micro-controller will allow next cycle of un-mapping*/
+				return;
+			}
+			if(sample == '\n')
+			{
+				data[i] = 0;
+			}
+			else
+			{
+				data[i] = sample;
+			}
+			i++;
+		}while(sample != '\n');
+
+		//Read X parameter from line
+		//char *ParsePointer = strtok((char*)data, "		");
+		char *ParsePointer = strtok((char*)data, " ");
+
+		if(strlen(ParsePointer) > 0 && strlen(ParsePointer) < 32)
+		{
+			map->SetX = atof(ParsePointer);
+		}
+
+		//Read Y parameter from line
+		ParsePointer = strtok(NULL, " ");
+
+		if(strlen(ParsePointer) > 0 && strlen(ParsePointer) < 32)
+		{
+			map->SetY = atof(ParsePointer);
+		}
+
+		//Read speed parameter from line
+		ParsePointer = strtok(NULL, " ");
+
+		if(strlen(ParsePointer) > 0 && strlen(ParsePointer) < 32)
+		{
+			//map->SetSpeed = atof(ParsePointer); //:TODO: odmien to zeby nie bylo podzielone przez dwa przy odczycie
+			map->SetSpeed = atof(ParsePointer);
+		}
+	}
+}
+void DriveOnMap(Map_t *map, motor_t *MotorLeft, motor_t *MotorRight)
+{
+	map->AlhphaOri = 1; //100% IMU 0% encoders
+
+	//(3.1) -- Save XY
+	map->PreviousXri = map->Xri;
+	map->PreviousYri = map->Yri;
+
+	map->PreviousPci[0] = map->Pci[0];
+	map->PreviousPci[1] = map->Pci[1];
+
+	//(2.11) -- Translation In Measurement
+	float Ti = (MotorLeft->LpfDistanceInMeasurement + MotorRight->LpfDistanceInMeasurement) / 2;
+	//(2.12) -- Rotation In Measurement
+	float Ri = (MotorRight->LpfDistanceInMeasurement - MotorLeft->LpfDistanceInMeasurement) / (MAIN_PCB_LENGTH * 2 * 1.085);//1.085
+
+	//(2.13) -- Main PCB Position
+	map->Ori = map->Ori + (((1-map->AlhphaOri)*Ri) + (map->OriIMU * map->AlhphaOri));
+	map->Ori = normalize_angle(map->Ori);
+	map->Xri = map->Xri + ((Ti * cosf(map->Ori))/2);
+	map->Yri = map->Yri + ((Ti * sinf(map->Ori)))/2;
+
+
+	// How near to next point we are ?
+	float dx = map->SetX - map->Xri;
+	float dy = map->SetY - map->Yri;
+	if(sqrtf(dx*dx + dy*dy) < 0.035f)// 0.05f//
+	{
+		//Get new rotation, speed & point to go
+	    ReadMapLine(map);
+	}
+
+	map->SetRotation = atan2f((map->SetY - map->Yri),(map->SetX - map->Xri));
+
+	//PID to get set rotation
+	float Error = (normalize_angle(map->SetRotation - map->Ori)) * 1000.0; //In radians
+
+	map->ErrorSum += Error;
+	if(map->ErrorSum > 850)//500
+	{
+		map->ErrorSum  = 850;
+	}
+	if(map->ErrorSum < -850)
+	{
+		map->ErrorSum  = -850;
+	}
+
+	float ErrorDif = map->LastError - Error;
+	map->LastError = Error;
+
+	motor_control(map->SetSpeed + (map->p * Error) - (map->d * ErrorDif), map->SetSpeed - (map->p * Error)+ (map->d * ErrorDif));
+
+}
+
+
+void MappingV2(Map_t *map, motor_t *MotorLeft, motor_t *MotorRight)
+{
+	uint8_t buffer[100];
+	map->AlhphaOri = 1; //100% IMU 0% encoders
+
+	//(3.1) -- Save XY
+	map->PreviousXri = map->Xri;
+	map->PreviousYri = map->Yri;
+
+	map->PreviousPci[0] = map->Pci[0];
+	map->PreviousPci[1] = map->Pci[1];
+
+	//(2.11) -- Translation In Measurement
+	float Ti = (MotorLeft->LpfDistanceInMeasurement + MotorRight->LpfDistanceInMeasurement) / 2;
+	//(2.12) -- Rotation In Measurement
+	float Ri = (MotorRight->LpfDistanceInMeasurement - MotorLeft->LpfDistanceInMeasurement) / (MAIN_PCB_LENGTH * 2 * 1.085);//1.085
+
+	//(2.13) -- Main PCB Position
+	map->Ori = map->Ori + (((1-map->AlhphaOri)*Ri) + (map->OriIMU * map->AlhphaOri));
+	map->Ori = normalize_angle(map->Ori);
+	map->Xri = map->Xri + ((Ti * cosf(map->Ori))/2);
+	map->Yri = map->Yri + ((Ti * sinf(map->Ori)))/2;
+
+
+	sprintf((char*)buffer, " %0.3f	%0.3f	%0.3f	%0.3f	%0.3f	%0.3f	%0.3f \n", map->Xri, map->Yri, map->Xri, map->Yri, (map->Ori / 0.01745329251f), GRUZIK.Error_P,GRUZIK.Error_D);
+	f_printf(&SdCardFile, (char*)buffer);
+}
+
+
+
+
+
+

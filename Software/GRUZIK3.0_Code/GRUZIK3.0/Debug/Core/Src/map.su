@@ -2,4 +2,4 @@
 ../Core/Src/map.c:79:7:normalize_angle	16	static
 ../Core/Src/map.c:85:13:ReadMapLine	64	static
 ../Core/Src/map.c:170:6:DriveOnMap	64	static
-../Core/Src/map.c:225:6:MappingV2	240	static
+../Core/Src/map.c:225:6:MapUpdateV2	272	static

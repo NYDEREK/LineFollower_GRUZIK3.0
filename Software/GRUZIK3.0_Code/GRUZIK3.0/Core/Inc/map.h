@@ -62,5 +62,5 @@ typedef struct {
 //Methods
 void MapUpdate(Map_t *map, motor_t *MotorLeft, motor_t *MotorRight);
 void DriveOnMap(Map_t *map, motor_t *MotorLeft, motor_t *MotorRight);
-void MappingV2(Map_t *map, motor_t *MotorLeft, motor_t *MotorRight);
+void MapUpdateV2(Map_t *map, motor_t *MotorLeft, motor_t *MotorRight);
 #endif /* INC_MAP_H_ */

@@ -36,6 +36,15 @@ typedef struct
 	uint32_t DoneUnMappingTimer;
 	uint8_t UnMappingDone;
 
+	uint8_t state;
+
 } LineFollower_t;
+enum state
+{
+	PidFollowing,
+	Mappig,
+	UnMapping,
+	Stop,
+};
 
 #endif /* INC_LINE_FOLLOWER_H_ */

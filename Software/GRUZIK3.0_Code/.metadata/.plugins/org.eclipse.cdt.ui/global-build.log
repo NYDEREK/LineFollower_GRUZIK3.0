@@ -22413,3 +22413,551 @@ arm-none-eabi-size  GRUZIK3.0.elf
   97964	    504	  29016	 127484	  1f1fc	GRUZIK3.0.elf
 Finished building: default.size.stdout
  
+22:22:11 **** Build of configuration Debug for project GRUZIK3.0 ****
+make -j8 all 
+arm-none-eabi-gcc "../Core/Src/map.c" -mcpu=cortex-m4 -std=gnu11 -g3 -DDEBUG -DUSE_HAL_DRIVER -DSTM32G474xx -c -I../Core/Inc -I../Drivers/STM32G4xx_HAL_Driver/Inc -I../Drivers/STM32G4xx_HAL_Driver/Inc/Legacy -I../Drivers/CMSIS/Device/ST/STM32G4xx/Include -I../Drivers/CMSIS/Include -I../FATFS/Target -I../FATFS/App -I../Middlewares/Third_Party/FatFs/src -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Core/Src/map.d" -MT"Core/Src/map.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Core/Src/map.o"
+arm-none-eabi-gcc -o "GRUZIK3.0.elf" @"objects.list"   -mcpu=cortex-m4 -T"D:\SN-USER\Projects\GRUZIK3.0-light\Software\GRUZIK3.0_Code\GRUZIK3.0\STM32G474RETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="GRUZIK3.0.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -u _printf_float -Wl,--start-group -lc -lm -Wl,--end-group
+C:/ST/STM32CubeIDE_1.19.0/STM32CubeIDE/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.13.3.rel1.win32_1.0.0.202411081344/tools/bin/../lib/gcc/arm-none-eabi/13.3.1/../../../../arm-none-eabi/bin/ld.exe: warning: GRUZIK3.0.elf has a LOAD segment with RWX permissions
+Finished building target: GRUZIK3.0.elf
+ 
+arm-none-eabi-size  GRUZIK3.0.elf 
+arm-none-eabi-objdump -h -S GRUZIK3.0.elf  > "GRUZIK3.0.list"
+   text	   data	    bss	    dec	    hex	filename
+  97964	    504	  29016	 127484	  1f1fc	GRUZIK3.0.elf
+Finished building: default.size.stdout
+ 
+Finished building: GRUZIK3.0.list
+ 
+22:24:11 **** Incremental Build of configuration Debug for project GRUZIK3.0 ****
+make -j8 all 
+arm-none-eabi-gcc "../Core/Src/main.c" -mcpu=cortex-m4 -std=gnu11 -g3 -DDEBUG -DUSE_HAL_DRIVER -DSTM32G474xx -c -I../Core/Inc -I../Drivers/STM32G4xx_HAL_Driver/Inc -I../Drivers/STM32G4xx_HAL_Driver/Inc/Legacy -I../Drivers/CMSIS/Device/ST/STM32G4xx/Include -I../Drivers/CMSIS/Include -I../FATFS/Target -I../FATFS/App -I../Middlewares/Third_Party/FatFs/src -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Core/Src/main.d" -MT"Core/Src/main.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Core/Src/main.o"
+arm-none-eabi-gcc "../Core/Src/map.c" -mcpu=cortex-m4 -std=gnu11 -g3 -DDEBUG -DUSE_HAL_DRIVER -DSTM32G474xx -c -I../Core/Inc -I../Drivers/STM32G4xx_HAL_Driver/Inc -I../Drivers/STM32G4xx_HAL_Driver/Inc/Legacy -I../Drivers/CMSIS/Device/ST/STM32G4xx/Include -I../Drivers/CMSIS/Include -I../FATFS/Target -I../FATFS/App -I../Middlewares/Third_Party/FatFs/src -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Core/Src/map.d" -MT"Core/Src/map.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Core/Src/map.o"
+arm-none-eabi-gcc -o "GRUZIK3.0.elf" @"objects.list"   -mcpu=cortex-m4 -T"D:\SN-USER\Projects\GRUZIK3.0-light\Software\GRUZIK3.0_Code\GRUZIK3.0\STM32G474RETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="GRUZIK3.0.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -u _printf_float -Wl,--start-group -lc -lm -Wl,--end-group
+C:/ST/STM32CubeIDE_1.19.0/STM32CubeIDE/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.13.3.rel1.win32_1.0.0.202411081344/tools/bin/../lib/gcc/arm-none-eabi/13.3.1/../../../../arm-none-eabi/bin/ld.exe: warning: GRUZIK3.0.elf has a LOAD segment with RWX permissions
+Finished building target: GRUZIK3.0.elf
+ 
+arm-none-eabi-size  GRUZIK3.0.elf 
+arm-none-eabi-objdump -h -S GRUZIK3.0.elf  > "GRUZIK3.0.list"
+   text	   data	    bss	    dec	    hex	filename
+  97964	    504	  29016	 127484	  1f1fc	GRUZIK3.0.elf
+Finished building: default.size.stdout
+ 
+Finished building: GRUZIK3.0.list
+ 
+22:24:27 **** Incremental Build of configuration Debug for project GRUZIK3.0 ****
+make -j8 all 
+arm-none-eabi-size  GRUZIK3.0.elf 
+   text	   data	    bss	    dec	    hex	filename
+  97964	    504	  29016	 127484	  1f1fc	GRUZIK3.0.elf
+Finished building: default.size.stdout
+ 
+22:48:36 **** Incremental Build of configuration Debug for project GRUZIK3.0 ****
+make -j8 all 
+arm-none-eabi-gcc "../Core/Src/main.c" -mcpu=cortex-m4 -std=gnu11 -g3 -DDEBUG -DUSE_HAL_DRIVER -DSTM32G474xx -c -I../Core/Inc -I../Drivers/STM32G4xx_HAL_Driver/Inc -I../Drivers/STM32G4xx_HAL_Driver/Inc/Legacy -I../Drivers/CMSIS/Device/ST/STM32G4xx/Include -I../Drivers/CMSIS/Include -I../FATFS/Target -I../FATFS/App -I../Middlewares/Third_Party/FatFs/src -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Core/Src/main.d" -MT"Core/Src/main.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Core/Src/main.o"
+arm-none-eabi-gcc "../Core/Src/map.c" -mcpu=cortex-m4 -std=gnu11 -g3 -DDEBUG -DUSE_HAL_DRIVER -DSTM32G474xx -c -I../Core/Inc -I../Drivers/STM32G4xx_HAL_Driver/Inc -I../Drivers/STM32G4xx_HAL_Driver/Inc/Legacy -I../Drivers/CMSIS/Device/ST/STM32G4xx/Include -I../Drivers/CMSIS/Include -I../FATFS/Target -I../FATFS/App -I../Middlewares/Third_Party/FatFs/src -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Core/Src/map.d" -MT"Core/Src/map.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Core/Src/map.o"
+../Core/Src/map.c: In function 'MappingV2':
+../Core/Src/map.c:272:23: warning: unused variable 'ErrorDif' [-Wunused-variable]
+  272 |                 float ErrorDif = map->LastError - Error;
+      |                       ^~~~~~~~
+arm-none-eabi-gcc -o "GRUZIK3.0.elf" @"objects.list"   -mcpu=cortex-m4 -T"D:\SN-USER\Projects\GRUZIK3.0-light\Software\GRUZIK3.0_Code\GRUZIK3.0\STM32G474RETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="GRUZIK3.0.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -u _printf_float -Wl,--start-group -lc -lm -Wl,--end-group
+C:/ST/STM32CubeIDE_1.19.0/STM32CubeIDE/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.13.3.rel1.win32_1.0.0.202411081344/tools/bin/../lib/gcc/arm-none-eabi/13.3.1/../../../../arm-none-eabi/bin/ld.exe: warning: GRUZIK3.0.elf has a LOAD segment with RWX permissions
+Finished building target: GRUZIK3.0.elf
+ 
+arm-none-eabi-size  GRUZIK3.0.elf 
+arm-none-eabi-objdump -h -S GRUZIK3.0.elf  > "GRUZIK3.0.list"
+   text	   data	    bss	    dec	    hex	filename
+  91908	    504	  29016	 121428	  1da54	GRUZIK3.0.elf
+Finished building: default.size.stdout
+ 
+Finished building: GRUZIK3.0.list
+ 
+22:49:28 **** Incremental Build of configuration Debug for project GRUZIK3.0 ****
+make -j8 all 
+arm-none-eabi-gcc "../Core/Src/main.c" -mcpu=cortex-m4 -std=gnu11 -g3 -DDEBUG -DUSE_HAL_DRIVER -DSTM32G474xx -c -I../Core/Inc -I../Drivers/STM32G4xx_HAL_Driver/Inc -I../Drivers/STM32G4xx_HAL_Driver/Inc/Legacy -I../Drivers/CMSIS/Device/ST/STM32G4xx/Include -I../Drivers/CMSIS/Include -I../FATFS/Target -I../FATFS/App -I../Middlewares/Third_Party/FatFs/src -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Core/Src/main.d" -MT"Core/Src/main.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Core/Src/main.o"
+arm-none-eabi-gcc -o "GRUZIK3.0.elf" @"objects.list"   -mcpu=cortex-m4 -T"D:\SN-USER\Projects\GRUZIK3.0-light\Software\GRUZIK3.0_Code\GRUZIK3.0\STM32G474RETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="GRUZIK3.0.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -u _printf_float -Wl,--start-group -lc -lm -Wl,--end-group
+C:/ST/STM32CubeIDE_1.19.0/STM32CubeIDE/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.13.3.rel1.win32_1.0.0.202411081344/tools/bin/../lib/gcc/arm-none-eabi/13.3.1/../../../../arm-none-eabi/bin/ld.exe: warning: GRUZIK3.0.elf has a LOAD segment with RWX permissions
+Finished building target: GRUZIK3.0.elf
+ 
+arm-none-eabi-size  GRUZIK3.0.elf 
+arm-none-eabi-objdump -h -S GRUZIK3.0.elf  > "GRUZIK3.0.list"
+   text	   data	    bss	    dec	    hex	filename
+  98412	    504	  29016	 127932	  1f3bc	GRUZIK3.0.elf
+Finished building: default.size.stdout
+ 
+Finished building: GRUZIK3.0.list
+ 
+23:06:40 **** Incremental Build of configuration Debug for project GRUZIK3.0 ****
+make -j8 all 
+arm-none-eabi-gcc "../Core/Src/main.c" -mcpu=cortex-m4 -std=gnu11 -g3 -DDEBUG -DUSE_HAL_DRIVER -DSTM32G474xx -c -I../Core/Inc -I../Drivers/STM32G4xx_HAL_Driver/Inc -I../Drivers/STM32G4xx_HAL_Driver/Inc/Legacy -I../Drivers/CMSIS/Device/ST/STM32G4xx/Include -I../Drivers/CMSIS/Include -I../FATFS/Target -I../FATFS/App -I../Middlewares/Third_Party/FatFs/src -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Core/Src/main.d" -MT"Core/Src/main.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Core/Src/main.o"
+arm-none-eabi-gcc -o "GRUZIK3.0.elf" @"objects.list"   -mcpu=cortex-m4 -T"D:\SN-USER\Projects\GRUZIK3.0-light\Software\GRUZIK3.0_Code\GRUZIK3.0\STM32G474RETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="GRUZIK3.0.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -u _printf_float -Wl,--start-group -lc -lm -Wl,--end-group
+C:/ST/STM32CubeIDE_1.19.0/STM32CubeIDE/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.13.3.rel1.win32_1.0.0.202411081344/tools/bin/../lib/gcc/arm-none-eabi/13.3.1/../../../../arm-none-eabi/bin/ld.exe: warning: GRUZIK3.0.elf has a LOAD segment with RWX permissions
+Finished building target: GRUZIK3.0.elf
+ 
+arm-none-eabi-size  GRUZIK3.0.elf 
+arm-none-eabi-objdump -h -S GRUZIK3.0.elf  > "GRUZIK3.0.list"
+   text	   data	    bss	    dec	    hex	filename
+  98412	    504	  29016	 127932	  1f3bc	GRUZIK3.0.elf
+Finished building: default.size.stdout
+ 
+Finished building: GRUZIK3.0.list
+ 
+23:13:14 **** Incremental Build of configuration Debug for project GRUZIK3.0 ****
+make -j8 all 
+arm-none-eabi-gcc "../Core/Src/main.c" -mcpu=cortex-m4 -std=gnu11 -g3 -DDEBUG -DUSE_HAL_DRIVER -DSTM32G474xx -c -I../Core/Inc -I../Drivers/STM32G4xx_HAL_Driver/Inc -I../Drivers/STM32G4xx_HAL_Driver/Inc/Legacy -I../Drivers/CMSIS/Device/ST/STM32G4xx/Include -I../Drivers/CMSIS/Include -I../FATFS/Target -I../FATFS/App -I../Middlewares/Third_Party/FatFs/src -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Core/Src/main.d" -MT"Core/Src/main.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Core/Src/main.o"
+arm-none-eabi-gcc -o "GRUZIK3.0.elf" @"objects.list"   -mcpu=cortex-m4 -T"D:\SN-USER\Projects\GRUZIK3.0-light\Software\GRUZIK3.0_Code\GRUZIK3.0\STM32G474RETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="GRUZIK3.0.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -u _printf_float -Wl,--start-group -lc -lm -Wl,--end-group
+C:/ST/STM32CubeIDE_1.19.0/STM32CubeIDE/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.13.3.rel1.win32_1.0.0.202411081344/tools/bin/../lib/gcc/arm-none-eabi/13.3.1/../../../../arm-none-eabi/bin/ld.exe: warning: GRUZIK3.0.elf has a LOAD segment with RWX permissions
+Finished building target: GRUZIK3.0.elf
+ 
+arm-none-eabi-size  GRUZIK3.0.elf 
+arm-none-eabi-objdump -h -S GRUZIK3.0.elf  > "GRUZIK3.0.list"
+   text	   data	    bss	    dec	    hex	filename
+  98412	    504	  29016	 127932	  1f3bc	GRUZIK3.0.elf
+Finished building: default.size.stdout
+ 
+Finished building: GRUZIK3.0.list
+ 
+23:21:52 **** Incremental Build of configuration Debug for project GRUZIK3.0 ****
+make -j8 all 
+arm-none-eabi-gcc "../Core/Src/main.c" -mcpu=cortex-m4 -std=gnu11 -g3 -DDEBUG -DUSE_HAL_DRIVER -DSTM32G474xx -c -I../Core/Inc -I../Drivers/STM32G4xx_HAL_Driver/Inc -I../Drivers/STM32G4xx_HAL_Driver/Inc/Legacy -I../Drivers/CMSIS/Device/ST/STM32G4xx/Include -I../Drivers/CMSIS/Include -I../FATFS/Target -I../FATFS/App -I../Middlewares/Third_Party/FatFs/src -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Core/Src/main.d" -MT"Core/Src/main.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Core/Src/main.o"
+arm-none-eabi-gcc -o "GRUZIK3.0.elf" @"objects.list"   -mcpu=cortex-m4 -T"D:\SN-USER\Projects\GRUZIK3.0-light\Software\GRUZIK3.0_Code\GRUZIK3.0\STM32G474RETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="GRUZIK3.0.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -u _printf_float -Wl,--start-group -lc -lm -Wl,--end-group
+C:/ST/STM32CubeIDE_1.19.0/STM32CubeIDE/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.13.3.rel1.win32_1.0.0.202411081344/tools/bin/../lib/gcc/arm-none-eabi/13.3.1/../../../../arm-none-eabi/bin/ld.exe: warning: GRUZIK3.0.elf has a LOAD segment with RWX permissions
+Finished building target: GRUZIK3.0.elf
+ 
+arm-none-eabi-size  GRUZIK3.0.elf 
+arm-none-eabi-objdump -h -S GRUZIK3.0.elf  > "GRUZIK3.0.list"
+   text	   data	    bss	    dec	    hex	filename
+  98412	    504	  29016	 127932	  1f3bc	GRUZIK3.0.elf
+Finished building: default.size.stdout
+ 
+Finished building: GRUZIK3.0.list
+ 
+23:22:10 **** Incremental Build of configuration Debug for project GRUZIK3.0 ****
+make -j8 all 
+arm-none-eabi-gcc "../Core/Src/main.c" -mcpu=cortex-m4 -std=gnu11 -g3 -DDEBUG -DUSE_HAL_DRIVER -DSTM32G474xx -c -I../Core/Inc -I../Drivers/STM32G4xx_HAL_Driver/Inc -I../Drivers/STM32G4xx_HAL_Driver/Inc/Legacy -I../Drivers/CMSIS/Device/ST/STM32G4xx/Include -I../Drivers/CMSIS/Include -I../FATFS/Target -I../FATFS/App -I../Middlewares/Third_Party/FatFs/src -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Core/Src/main.d" -MT"Core/Src/main.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Core/Src/main.o"
+arm-none-eabi-gcc -o "GRUZIK3.0.elf" @"objects.list"   -mcpu=cortex-m4 -T"D:\SN-USER\Projects\GRUZIK3.0-light\Software\GRUZIK3.0_Code\GRUZIK3.0\STM32G474RETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="GRUZIK3.0.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -u _printf_float -Wl,--start-group -lc -lm -Wl,--end-group
+C:/ST/STM32CubeIDE_1.19.0/STM32CubeIDE/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.13.3.rel1.win32_1.0.0.202411081344/tools/bin/../lib/gcc/arm-none-eabi/13.3.1/../../../../arm-none-eabi/bin/ld.exe: warning: GRUZIK3.0.elf has a LOAD segment with RWX permissions
+Finished building target: GRUZIK3.0.elf
+ 
+arm-none-eabi-size  GRUZIK3.0.elf 
+arm-none-eabi-objdump -h -S GRUZIK3.0.elf  > "GRUZIK3.0.list"
+   text	   data	    bss	    dec	    hex	filename
+  98412	    504	  29016	 127932	  1f3bc	GRUZIK3.0.elf
+Finished building: default.size.stdout
+ 
+Finished building: GRUZIK3.0.list
+ 
+23:35:02 **** Incremental Build of configuration Debug for project GRUZIK3.0 ****
+make -j8 all 
+arm-none-eabi-gcc "../Core/Src/main.c" -mcpu=cortex-m4 -std=gnu11 -g3 -DDEBUG -DUSE_HAL_DRIVER -DSTM32G474xx -c -I../Core/Inc -I../Drivers/STM32G4xx_HAL_Driver/Inc -I../Drivers/STM32G4xx_HAL_Driver/Inc/Legacy -I../Drivers/CMSIS/Device/ST/STM32G4xx/Include -I../Drivers/CMSIS/Include -I../FATFS/Target -I../FATFS/App -I../Middlewares/Third_Party/FatFs/src -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Core/Src/main.d" -MT"Core/Src/main.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Core/Src/main.o"
+arm-none-eabi-gcc -o "GRUZIK3.0.elf" @"objects.list"   -mcpu=cortex-m4 -T"D:\SN-USER\Projects\GRUZIK3.0-light\Software\GRUZIK3.0_Code\GRUZIK3.0\STM32G474RETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="GRUZIK3.0.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -u _printf_float -Wl,--start-group -lc -lm -Wl,--end-group
+C:/ST/STM32CubeIDE_1.19.0/STM32CubeIDE/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.13.3.rel1.win32_1.0.0.202411081344/tools/bin/../lib/gcc/arm-none-eabi/13.3.1/../../../../arm-none-eabi/bin/ld.exe: warning: GRUZIK3.0.elf has a LOAD segment with RWX permissions
+Finished building target: GRUZIK3.0.elf
+ 
+arm-none-eabi-size  GRUZIK3.0.elf 
+arm-none-eabi-objdump -h -S GRUZIK3.0.elf  > "GRUZIK3.0.list"
+   text	   data	    bss	    dec	    hex	filename
+  98412	    504	  29016	 127932	  1f3bc	GRUZIK3.0.elf
+Finished building: default.size.stdout
+ 
+Finished building: GRUZIK3.0.list
+ 
+23:35:22 **** Incremental Build of configuration Debug for project GRUZIK3.0 ****
+make -j8 all 
+arm-none-eabi-size  GRUZIK3.0.elf 
+   text	   data	    bss	    dec	    hex	filename
+  98412	    504	  29016	 127932	  1f3bc	GRUZIK3.0.elf
+Finished building: default.size.stdout
+ 
+23:38:43 **** Incremental Build of configuration Debug for project GRUZIK3.0 ****
+make -j8 all 
+arm-none-eabi-gcc "../Core/Src/main.c" -mcpu=cortex-m4 -std=gnu11 -g3 -DDEBUG -DUSE_HAL_DRIVER -DSTM32G474xx -c -I../Core/Inc -I../Drivers/STM32G4xx_HAL_Driver/Inc -I../Drivers/STM32G4xx_HAL_Driver/Inc/Legacy -I../Drivers/CMSIS/Device/ST/STM32G4xx/Include -I../Drivers/CMSIS/Include -I../FATFS/Target -I../FATFS/App -I../Middlewares/Third_Party/FatFs/src -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Core/Src/main.d" -MT"Core/Src/main.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Core/Src/main.o"
+arm-none-eabi-gcc -o "GRUZIK3.0.elf" @"objects.list"   -mcpu=cortex-m4 -T"D:\SN-USER\Projects\GRUZIK3.0-light\Software\GRUZIK3.0_Code\GRUZIK3.0\STM32G474RETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="GRUZIK3.0.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -u _printf_float -Wl,--start-group -lc -lm -Wl,--end-group
+C:/ST/STM32CubeIDE_1.19.0/STM32CubeIDE/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.13.3.rel1.win32_1.0.0.202411081344/tools/bin/../lib/gcc/arm-none-eabi/13.3.1/../../../../arm-none-eabi/bin/ld.exe: warning: GRUZIK3.0.elf has a LOAD segment with RWX permissions
+Finished building target: GRUZIK3.0.elf
+ 
+arm-none-eabi-size  GRUZIK3.0.elf 
+arm-none-eabi-objdump -h -S GRUZIK3.0.elf  > "GRUZIK3.0.list"
+   text	   data	    bss	    dec	    hex	filename
+  98412	    504	  29016	 127932	  1f3bc	GRUZIK3.0.elf
+Finished building: default.size.stdout
+ 
+Finished building: GRUZIK3.0.list
+ 
+23:41:50 **** Incremental Build of configuration Debug for project GRUZIK3.0 ****
+make -j8 all 
+arm-none-eabi-gcc "../Core/Src/main.c" -mcpu=cortex-m4 -std=gnu11 -g3 -DDEBUG -DUSE_HAL_DRIVER -DSTM32G474xx -c -I../Core/Inc -I../Drivers/STM32G4xx_HAL_Driver/Inc -I../Drivers/STM32G4xx_HAL_Driver/Inc/Legacy -I../Drivers/CMSIS/Device/ST/STM32G4xx/Include -I../Drivers/CMSIS/Include -I../FATFS/Target -I../FATFS/App -I../Middlewares/Third_Party/FatFs/src -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Core/Src/main.d" -MT"Core/Src/main.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Core/Src/main.o"
+arm-none-eabi-gcc -o "GRUZIK3.0.elf" @"objects.list"   -mcpu=cortex-m4 -T"D:\SN-USER\Projects\GRUZIK3.0-light\Software\GRUZIK3.0_Code\GRUZIK3.0\STM32G474RETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="GRUZIK3.0.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -u _printf_float -Wl,--start-group -lc -lm -Wl,--end-group
+C:/ST/STM32CubeIDE_1.19.0/STM32CubeIDE/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.13.3.rel1.win32_1.0.0.202411081344/tools/bin/../lib/gcc/arm-none-eabi/13.3.1/../../../../arm-none-eabi/bin/ld.exe: warning: GRUZIK3.0.elf has a LOAD segment with RWX permissions
+Finished building target: GRUZIK3.0.elf
+ 
+arm-none-eabi-size  GRUZIK3.0.elf 
+arm-none-eabi-objdump -h -S GRUZIK3.0.elf  > "GRUZIK3.0.list"
+   text	   data	    bss	    dec	    hex	filename
+  98412	    504	  29016	 127932	  1f3bc	GRUZIK3.0.elf
+Finished building: default.size.stdout
+ 
+Finished building: GRUZIK3.0.list
+ 
+23:47:27 **** Incremental Build of configuration Debug for project GRUZIK3.0 ****
+make -j8 all 
+arm-none-eabi-gcc "../Core/Src/main.c" -mcpu=cortex-m4 -std=gnu11 -g3 -DDEBUG -DUSE_HAL_DRIVER -DSTM32G474xx -c -I../Core/Inc -I../Drivers/STM32G4xx_HAL_Driver/Inc -I../Drivers/STM32G4xx_HAL_Driver/Inc/Legacy -I../Drivers/CMSIS/Device/ST/STM32G4xx/Include -I../Drivers/CMSIS/Include -I../FATFS/Target -I../FATFS/App -I../Middlewares/Third_Party/FatFs/src -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Core/Src/main.d" -MT"Core/Src/main.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Core/Src/main.o"
+arm-none-eabi-gcc -o "GRUZIK3.0.elf" @"objects.list"   -mcpu=cortex-m4 -T"D:\SN-USER\Projects\GRUZIK3.0-light\Software\GRUZIK3.0_Code\GRUZIK3.0\STM32G474RETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="GRUZIK3.0.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -u _printf_float -Wl,--start-group -lc -lm -Wl,--end-group
+C:/ST/STM32CubeIDE_1.19.0/STM32CubeIDE/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.13.3.rel1.win32_1.0.0.202411081344/tools/bin/../lib/gcc/arm-none-eabi/13.3.1/../../../../arm-none-eabi/bin/ld.exe: warning: GRUZIK3.0.elf has a LOAD segment with RWX permissions
+Finished building target: GRUZIK3.0.elf
+ 
+arm-none-eabi-size  GRUZIK3.0.elf 
+arm-none-eabi-objdump -h -S GRUZIK3.0.elf  > "GRUZIK3.0.list"
+   text	   data	    bss	    dec	    hex	filename
+  98412	    504	  29016	 127932	  1f3bc	GRUZIK3.0.elf
+Finished building: default.size.stdout
+ 
+Finished building: GRUZIK3.0.list
+ 
+00:21:47 **** Incremental Build of configuration Debug for project GRUZIK3.0 ****
+make -j8 all 
+arm-none-eabi-gcc "../Core/Src/SimpleParser.c" -mcpu=cortex-m4 -std=gnu11 -g3 -DDEBUG -DUSE_HAL_DRIVER -DSTM32G474xx -c -I../Core/Inc -I../Drivers/STM32G4xx_HAL_Driver/Inc -I../Drivers/STM32G4xx_HAL_Driver/Inc/Legacy -I../Drivers/CMSIS/Device/ST/STM32G4xx/Include -I../Drivers/CMSIS/Include -I../FATFS/Target -I../FATFS/App -I../Middlewares/Third_Party/FatFs/src -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Core/Src/SimpleParser.d" -MT"Core/Src/SimpleParser.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Core/Src/SimpleParser.o"
+arm-none-eabi-gcc "../Core/Src/main.c" -mcpu=cortex-m4 -std=gnu11 -g3 -DDEBUG -DUSE_HAL_DRIVER -DSTM32G474xx -c -I../Core/Inc -I../Drivers/STM32G4xx_HAL_Driver/Inc -I../Drivers/STM32G4xx_HAL_Driver/Inc/Legacy -I../Drivers/CMSIS/Device/ST/STM32G4xx/Include -I../Drivers/CMSIS/Include -I../FATFS/Target -I../FATFS/App -I../Middlewares/Third_Party/FatFs/src -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Core/Src/main.d" -MT"Core/Src/main.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Core/Src/main.o"
+arm-none-eabi-gcc "../Core/Src/map.c" -mcpu=cortex-m4 -std=gnu11 -g3 -DDEBUG -DUSE_HAL_DRIVER -DSTM32G474xx -c -I../Core/Inc -I../Drivers/STM32G4xx_HAL_Driver/Inc -I../Drivers/STM32G4xx_HAL_Driver/Inc/Legacy -I../Drivers/CMSIS/Device/ST/STM32G4xx/Include -I../Drivers/CMSIS/Include -I../FATFS/Target -I../FATFS/App -I../Middlewares/Third_Party/FatFs/src -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Core/Src/map.d" -MT"Core/Src/map.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Core/Src/map.o"
+../Core/Src/map.c: In function 'MapUpdateV2':
+../Core/Src/map.c:231:28: error: 'Map_t' has no member named 'alphaOri'; did you mean 'AlhphaOri'?
+  231 |         float alpha = map->alphaOri; // przypisz wcześniej, np map->alphaOri = 0.3f;
+      |                            ^~~~~~~~
+      |                            AlhphaOri
+make: *** [Core/Src/subdir.mk:79: Core/Src/map.o] Error 1
+make: *** Waiting for unfinished jobs....
+"make -j8 all" terminated with exit code 2. Build might be incomplete.
+00:22:35 **** Incremental Build of configuration Debug for project GRUZIK3.0 ****
+make -j8 all 
+arm-none-eabi-gcc "../Core/Src/map.c" -mcpu=cortex-m4 -std=gnu11 -g3 -DDEBUG -DUSE_HAL_DRIVER -DSTM32G474xx -c -I../Core/Inc -I../Drivers/STM32G4xx_HAL_Driver/Inc -I../Drivers/STM32G4xx_HAL_Driver/Inc/Legacy -I../Drivers/CMSIS/Device/ST/STM32G4xx/Include -I../Drivers/CMSIS/Include -I../FATFS/Target -I../FATFS/App -I../Middlewares/Third_Party/FatFs/src -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Core/Src/map.d" -MT"Core/Src/map.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Core/Src/map.o"
+../Core/Src/map.c: In function 'MapUpdateV2':
+../Core/Src/map.c:232:28: error: 'Map_t' has no member named 'AlphaOri'; did you mean 'AlhphaOri'?
+  232 |         float alpha = map->AlphaOri; // przypisz wcześniej, np map->alphaOri = 0.3f;
+      |                            ^~~~~~~~
+      |                            AlhphaOri
+make: *** [Core/Src/subdir.mk:79: Core/Src/map.o] Error 1
+"make -j8 all" terminated with exit code 2. Build might be incomplete.
+00:22:50 **** Incremental Build of configuration Debug for project GRUZIK3.0 ****
+make -j8 all 
+arm-none-eabi-gcc "../Core/Src/map.c" -mcpu=cortex-m4 -std=gnu11 -g3 -DDEBUG -DUSE_HAL_DRIVER -DSTM32G474xx -c -I../Core/Inc -I../Drivers/STM32G4xx_HAL_Driver/Inc -I../Drivers/STM32G4xx_HAL_Driver/Inc/Legacy -I../Drivers/CMSIS/Device/ST/STM32G4xx/Include -I../Drivers/CMSIS/Include -I../FATFS/Target -I../FATFS/App -I../Middlewares/Third_Party/FatFs/src -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Core/Src/map.d" -MT"Core/Src/map.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Core/Src/map.o"
+arm-none-eabi-gcc -o "GRUZIK3.0.elf" @"objects.list"   -mcpu=cortex-m4 -T"D:\SN-USER\Projects\GRUZIK3.0-light\Software\GRUZIK3.0_Code\GRUZIK3.0\STM32G474RETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="GRUZIK3.0.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -u _printf_float -Wl,--start-group -lc -lm -Wl,--end-group
+C:/ST/STM32CubeIDE_1.19.0/STM32CubeIDE/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.13.3.rel1.win32_1.0.0.202411081344/tools/bin/../lib/gcc/arm-none-eabi/13.3.1/../../../../arm-none-eabi/bin/ld.exe: warning: GRUZIK3.0.elf has a LOAD segment with RWX permissions
+Finished building target: GRUZIK3.0.elf
+ 
+arm-none-eabi-size  GRUZIK3.0.elf 
+arm-none-eabi-objdump -h -S GRUZIK3.0.elf  > "GRUZIK3.0.list"
+   text	   data	    bss	    dec	    hex	filename
+  91732	    504	  29016	 121252	  1d9a4	GRUZIK3.0.elf
+Finished building: default.size.stdout
+ 
+Finished building: GRUZIK3.0.list
+ 
+00:23:22 **** Incremental Build of configuration Debug for project GRUZIK3.0 ****
+make -j8 all 
+arm-none-eabi-size  GRUZIK3.0.elf 
+   text	   data	    bss	    dec	    hex	filename
+  91732	    504	  29016	 121252	  1d9a4	GRUZIK3.0.elf
+Finished building: default.size.stdout
+ 
+00:27:35 **** Incremental Build of configuration Debug for project GRUZIK3.0 ****
+make -j8 all 
+arm-none-eabi-gcc "../Core/Src/main.c" -mcpu=cortex-m4 -std=gnu11 -g3 -DDEBUG -DUSE_HAL_DRIVER -DSTM32G474xx -c -I../Core/Inc -I../Drivers/STM32G4xx_HAL_Driver/Inc -I../Drivers/STM32G4xx_HAL_Driver/Inc/Legacy -I../Drivers/CMSIS/Device/ST/STM32G4xx/Include -I../Drivers/CMSIS/Include -I../FATFS/Target -I../FATFS/App -I../Middlewares/Third_Party/FatFs/src -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Core/Src/main.d" -MT"Core/Src/main.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Core/Src/main.o"
+arm-none-eabi-gcc "../Core/Src/map.c" -mcpu=cortex-m4 -std=gnu11 -g3 -DDEBUG -DUSE_HAL_DRIVER -DSTM32G474xx -c -I../Core/Inc -I../Drivers/STM32G4xx_HAL_Driver/Inc -I../Drivers/STM32G4xx_HAL_Driver/Inc/Legacy -I../Drivers/CMSIS/Device/ST/STM32G4xx/Include -I../Drivers/CMSIS/Include -I../FATFS/Target -I../FATFS/App -I../Middlewares/Third_Party/FatFs/src -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Core/Src/map.d" -MT"Core/Src/map.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Core/Src/map.o"
+arm-none-eabi-gcc -o "GRUZIK3.0.elf" @"objects.list"   -mcpu=cortex-m4 -T"D:\SN-USER\Projects\GRUZIK3.0-light\Software\GRUZIK3.0_Code\GRUZIK3.0\STM32G474RETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="GRUZIK3.0.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -u _printf_float -Wl,--start-group -lc -lm -Wl,--end-group
+C:/ST/STM32CubeIDE_1.19.0/STM32CubeIDE/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.13.3.rel1.win32_1.0.0.202411081344/tools/bin/../lib/gcc/arm-none-eabi/13.3.1/../../../../arm-none-eabi/bin/ld.exe: warning: GRUZIK3.0.elf has a LOAD segment with RWX permissions
+Finished building target: GRUZIK3.0.elf
+ 
+arm-none-eabi-size  GRUZIK3.0.elf 
+arm-none-eabi-objdump -h -S GRUZIK3.0.elf  > "GRUZIK3.0.list"
+   text	   data	    bss	    dec	    hex	filename
+  91732	    504	  29016	 121252	  1d9a4	GRUZIK3.0.elf
+Finished building: default.size.stdout
+ 
+Finished building: GRUZIK3.0.list
+ 
+00:27:47 **** Incremental Build of configuration Debug for project GRUZIK3.0 ****
+make -j8 all 
+arm-none-eabi-size  GRUZIK3.0.elf 
+   text	   data	    bss	    dec	    hex	filename
+  91732	    504	  29016	 121252	  1d9a4	GRUZIK3.0.elf
+Finished building: default.size.stdout
+ 
+00:31:22 **** Incremental Build of configuration Debug for project GRUZIK3.0 ****
+make -j8 all 
+arm-none-eabi-gcc "../Core/Src/map.c" -mcpu=cortex-m4 -std=gnu11 -g3 -DDEBUG -DUSE_HAL_DRIVER -DSTM32G474xx -c -I../Core/Inc -I../Drivers/STM32G4xx_HAL_Driver/Inc -I../Drivers/STM32G4xx_HAL_Driver/Inc/Legacy -I../Drivers/CMSIS/Device/ST/STM32G4xx/Include -I../Drivers/CMSIS/Include -I../FATFS/Target -I../FATFS/App -I../Middlewares/Third_Party/FatFs/src -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Core/Src/map.d" -MT"Core/Src/map.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Core/Src/map.o"
+arm-none-eabi-gcc -o "GRUZIK3.0.elf" @"objects.list"   -mcpu=cortex-m4 -T"D:\SN-USER\Projects\GRUZIK3.0-light\Software\GRUZIK3.0_Code\GRUZIK3.0\STM32G474RETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="GRUZIK3.0.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -u _printf_float -Wl,--start-group -lc -lm -Wl,--end-group
+C:/ST/STM32CubeIDE_1.19.0/STM32CubeIDE/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.13.3.rel1.win32_1.0.0.202411081344/tools/bin/../lib/gcc/arm-none-eabi/13.3.1/../../../../arm-none-eabi/bin/ld.exe: warning: GRUZIK3.0.elf has a LOAD segment with RWX permissions
+Finished building target: GRUZIK3.0.elf
+ 
+arm-none-eabi-size  GRUZIK3.0.elf 
+arm-none-eabi-objdump -h -S GRUZIK3.0.elf  > "GRUZIK3.0.list"
+   text	   data	    bss	    dec	    hex	filename
+  91732	    504	  29016	 121252	  1d9a4	GRUZIK3.0.elf
+Finished building: default.size.stdout
+ 
+Finished building: GRUZIK3.0.list
+ 
+00:37:09 **** Incremental Build of configuration Debug for project GRUZIK3.0 ****
+make -j8 all 
+arm-none-eabi-gcc "../Core/Src/map.c" -mcpu=cortex-m4 -std=gnu11 -g3 -DDEBUG -DUSE_HAL_DRIVER -DSTM32G474xx -c -I../Core/Inc -I../Drivers/STM32G4xx_HAL_Driver/Inc -I../Drivers/STM32G4xx_HAL_Driver/Inc/Legacy -I../Drivers/CMSIS/Device/ST/STM32G4xx/Include -I../Drivers/CMSIS/Include -I../FATFS/Target -I../FATFS/App -I../Middlewares/Third_Party/FatFs/src -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Core/Src/map.d" -MT"Core/Src/map.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Core/Src/map.o"
+arm-none-eabi-gcc -o "GRUZIK3.0.elf" @"objects.list"   -mcpu=cortex-m4 -T"D:\SN-USER\Projects\GRUZIK3.0-light\Software\GRUZIK3.0_Code\GRUZIK3.0\STM32G474RETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="GRUZIK3.0.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -u _printf_float -Wl,--start-group -lc -lm -Wl,--end-group
+C:/ST/STM32CubeIDE_1.19.0/STM32CubeIDE/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.13.3.rel1.win32_1.0.0.202411081344/tools/bin/../lib/gcc/arm-none-eabi/13.3.1/../../../../arm-none-eabi/bin/ld.exe: warning: GRUZIK3.0.elf has a LOAD segment with RWX permissions
+Finished building target: GRUZIK3.0.elf
+ 
+arm-none-eabi-size  GRUZIK3.0.elf 
+arm-none-eabi-objdump -h -S GRUZIK3.0.elf  > "GRUZIK3.0.list"
+   text	   data	    bss	    dec	    hex	filename
+  91748	    504	  29016	 121268	  1d9b4	GRUZIK3.0.elf
+Finished building: default.size.stdout
+ 
+Finished building: GRUZIK3.0.list
+ 
+00:37:53 **** Incremental Build of configuration Debug for project GRUZIK3.0 ****
+make -j8 all 
+arm-none-eabi-size  GRUZIK3.0.elf 
+   text	   data	    bss	    dec	    hex	filename
+  91748	    504	  29016	 121268	  1d9b4	GRUZIK3.0.elf
+Finished building: default.size.stdout
+ 
+00:40:34 **** Incremental Build of configuration Debug for project GRUZIK3.0 ****
+make -j8 all 
+arm-none-eabi-size  GRUZIK3.0.elf 
+   text	   data	    bss	    dec	    hex	filename
+  91748	    504	  29016	 121268	  1d9b4	GRUZIK3.0.elf
+Finished building: default.size.stdout
+ 
+00:41:02 **** Incremental Build of configuration Debug for project GRUZIK3.0 ****
+make -j8 all 
+arm-none-eabi-size  GRUZIK3.0.elf 
+   text	   data	    bss	    dec	    hex	filename
+  91748	    504	  29016	 121268	  1d9b4	GRUZIK3.0.elf
+Finished building: default.size.stdout
+ 
+00:44:29 **** Incremental Build of configuration Debug for project GRUZIK3.0 ****
+make -j8 all 
+arm-none-eabi-gcc "../Core/Src/main.c" -mcpu=cortex-m4 -std=gnu11 -g3 -DDEBUG -DUSE_HAL_DRIVER -DSTM32G474xx -c -I../Core/Inc -I../Drivers/STM32G4xx_HAL_Driver/Inc -I../Drivers/STM32G4xx_HAL_Driver/Inc/Legacy -I../Drivers/CMSIS/Device/ST/STM32G4xx/Include -I../Drivers/CMSIS/Include -I../FATFS/Target -I../FATFS/App -I../Middlewares/Third_Party/FatFs/src -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Core/Src/main.d" -MT"Core/Src/main.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Core/Src/main.o"
+arm-none-eabi-gcc -o "GRUZIK3.0.elf" @"objects.list"   -mcpu=cortex-m4 -T"D:\SN-USER\Projects\GRUZIK3.0-light\Software\GRUZIK3.0_Code\GRUZIK3.0\STM32G474RETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="GRUZIK3.0.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -u _printf_float -Wl,--start-group -lc -lm -Wl,--end-group
+C:/ST/STM32CubeIDE_1.19.0/STM32CubeIDE/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.13.3.rel1.win32_1.0.0.202411081344/tools/bin/../lib/gcc/arm-none-eabi/13.3.1/../../../../arm-none-eabi/bin/ld.exe: warning: GRUZIK3.0.elf has a LOAD segment with RWX permissions
+Finished building target: GRUZIK3.0.elf
+ 
+arm-none-eabi-size  GRUZIK3.0.elf 
+arm-none-eabi-objdump -h -S GRUZIK3.0.elf  > "GRUZIK3.0.list"
+   text	   data	    bss	    dec	    hex	filename
+  91780	    504	  29016	 121300	  1d9d4	GRUZIK3.0.elf
+Finished building: default.size.stdout
+ 
+Finished building: GRUZIK3.0.list
+ 
+00:49:05 **** Incremental Build of configuration Debug for project GRUZIK3.0 ****
+make -j8 all 
+arm-none-eabi-gcc "../Core/Src/main.c" -mcpu=cortex-m4 -std=gnu11 -g3 -DDEBUG -DUSE_HAL_DRIVER -DSTM32G474xx -c -I../Core/Inc -I../Drivers/STM32G4xx_HAL_Driver/Inc -I../Drivers/STM32G4xx_HAL_Driver/Inc/Legacy -I../Drivers/CMSIS/Device/ST/STM32G4xx/Include -I../Drivers/CMSIS/Include -I../FATFS/Target -I../FATFS/App -I../Middlewares/Third_Party/FatFs/src -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Core/Src/main.d" -MT"Core/Src/main.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Core/Src/main.o"
+arm-none-eabi-gcc -o "GRUZIK3.0.elf" @"objects.list"   -mcpu=cortex-m4 -T"D:\SN-USER\Projects\GRUZIK3.0-light\Software\GRUZIK3.0_Code\GRUZIK3.0\STM32G474RETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="GRUZIK3.0.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -u _printf_float -Wl,--start-group -lc -lm -Wl,--end-group
+C:/ST/STM32CubeIDE_1.19.0/STM32CubeIDE/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.13.3.rel1.win32_1.0.0.202411081344/tools/bin/../lib/gcc/arm-none-eabi/13.3.1/../../../../arm-none-eabi/bin/ld.exe: warning: GRUZIK3.0.elf has a LOAD segment with RWX permissions
+Finished building target: GRUZIK3.0.elf
+ 
+arm-none-eabi-size  GRUZIK3.0.elf 
+arm-none-eabi-objdump -h -S GRUZIK3.0.elf  > "GRUZIK3.0.list"
+   text	   data	    bss	    dec	    hex	filename
+  91780	    504	  29016	 121300	  1d9d4	GRUZIK3.0.elf
+Finished building: default.size.stdout
+ 
+Finished building: GRUZIK3.0.list
+ 
+22:40:14 **** Build of configuration Debug for project GRUZIK3.0 ****
+make -j8 all 
+arm-none-eabi-size  GRUZIK3.0.elf 
+   text	   data	    bss	    dec	    hex	filename
+  91780	    504	  29016	 121300	  1d9d4	GRUZIK3.0.elf
+Finished building: default.size.stdout
+ 
+22:49:11 **** Incremental Build of configuration Debug for project GRUZIK3.0 ****
+make -j8 all 
+arm-none-eabi-gcc "../Core/Src/main.c" -mcpu=cortex-m4 -std=gnu11 -g3 -DDEBUG -DUSE_HAL_DRIVER -DSTM32G474xx -c -I../Core/Inc -I../Drivers/STM32G4xx_HAL_Driver/Inc -I../Drivers/STM32G4xx_HAL_Driver/Inc/Legacy -I../Drivers/CMSIS/Device/ST/STM32G4xx/Include -I../Drivers/CMSIS/Include -I../FATFS/Target -I../FATFS/App -I../Middlewares/Third_Party/FatFs/src -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Core/Src/main.d" -MT"Core/Src/main.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Core/Src/main.o"
+arm-none-eabi-gcc -o "GRUZIK3.0.elf" @"objects.list"   -mcpu=cortex-m4 -T"D:\SN-USER\Projects\GRUZIK3.0-light\Software\GRUZIK3.0_Code\GRUZIK3.0\STM32G474RETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="GRUZIK3.0.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -u _printf_float -Wl,--start-group -lc -lm -Wl,--end-group
+C:/ST/STM32CubeIDE_1.19.0/STM32CubeIDE/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.13.3.rel1.win32_1.0.0.202411081344/tools/bin/../lib/gcc/arm-none-eabi/13.3.1/../../../../arm-none-eabi/bin/ld.exe: warning: GRUZIK3.0.elf has a LOAD segment with RWX permissions
+Finished building target: GRUZIK3.0.elf
+ 
+arm-none-eabi-size  GRUZIK3.0.elf 
+arm-none-eabi-objdump -h -S GRUZIK3.0.elf  > "GRUZIK3.0.list"
+   text	   data	    bss	    dec	    hex	filename
+  91780	    504	  29016	 121300	  1d9d4	GRUZIK3.0.elf
+Finished building: default.size.stdout
+ 
+Finished building: GRUZIK3.0.list
+ 
+22:57:55 **** Incremental Build of configuration Debug for project GRUZIK3.0 ****
+make -j8 all 
+arm-none-eabi-gcc "../Core/Src/main.c" -mcpu=cortex-m4 -std=gnu11 -g3 -DDEBUG -DUSE_HAL_DRIVER -DSTM32G474xx -c -I../Core/Inc -I../Drivers/STM32G4xx_HAL_Driver/Inc -I../Drivers/STM32G4xx_HAL_Driver/Inc/Legacy -I../Drivers/CMSIS/Device/ST/STM32G4xx/Include -I../Drivers/CMSIS/Include -I../FATFS/Target -I../FATFS/App -I../Middlewares/Third_Party/FatFs/src -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Core/Src/main.d" -MT"Core/Src/main.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Core/Src/main.o"
+arm-none-eabi-gcc -o "GRUZIK3.0.elf" @"objects.list"   -mcpu=cortex-m4 -T"D:\SN-USER\Projects\GRUZIK3.0-light\Software\GRUZIK3.0_Code\GRUZIK3.0\STM32G474RETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="GRUZIK3.0.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -u _printf_float -Wl,--start-group -lc -lm -Wl,--end-group
+C:/ST/STM32CubeIDE_1.19.0/STM32CubeIDE/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.13.3.rel1.win32_1.0.0.202411081344/tools/bin/../lib/gcc/arm-none-eabi/13.3.1/../../../../arm-none-eabi/bin/ld.exe: warning: GRUZIK3.0.elf has a LOAD segment with RWX permissions
+Finished building target: GRUZIK3.0.elf
+ 
+arm-none-eabi-size  GRUZIK3.0.elf 
+arm-none-eabi-objdump -h -S GRUZIK3.0.elf  > "GRUZIK3.0.list"
+   text	   data	    bss	    dec	    hex	filename
+  91780	    504	  29016	 121300	  1d9d4	GRUZIK3.0.elf
+Finished building: default.size.stdout
+ 
+Finished building: GRUZIK3.0.list
+ 
+22:58:18 **** Incremental Build of configuration Debug for project GRUZIK3.0 ****
+make -j8 all 
+arm-none-eabi-size  GRUZIK3.0.elf 
+   text	   data	    bss	    dec	    hex	filename
+  91780	    504	  29016	 121300	  1d9d4	GRUZIK3.0.elf
+Finished building: default.size.stdout
+ 
+22:59:20 **** Incremental Build of configuration Debug for project GRUZIK3.0 ****
+make -j8 all 
+arm-none-eabi-size  GRUZIK3.0.elf 
+   text	   data	    bss	    dec	    hex	filename
+  91780	    504	  29016	 121300	  1d9d4	GRUZIK3.0.elf
+Finished building: default.size.stdout
+ 
+23:00:13 **** Incremental Build of configuration Debug for project GRUZIK3.0 ****
+make -j8 all 
+arm-none-eabi-size  GRUZIK3.0.elf 
+   text	   data	    bss	    dec	    hex	filename
+  91780	    504	  29016	 121300	  1d9d4	GRUZIK3.0.elf
+Finished building: default.size.stdout
+ 
+23:04:02 **** Incremental Build of configuration Debug for project GRUZIK3.0 ****
+make -j8 all 
+arm-none-eabi-gcc "../Core/Src/main.c" -mcpu=cortex-m4 -std=gnu11 -g3 -DDEBUG -DUSE_HAL_DRIVER -DSTM32G474xx -c -I../Core/Inc -I../Drivers/STM32G4xx_HAL_Driver/Inc -I../Drivers/STM32G4xx_HAL_Driver/Inc/Legacy -I../Drivers/CMSIS/Device/ST/STM32G4xx/Include -I../Drivers/CMSIS/Include -I../FATFS/Target -I../FATFS/App -I../Middlewares/Third_Party/FatFs/src -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Core/Src/main.d" -MT"Core/Src/main.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Core/Src/main.o"
+arm-none-eabi-gcc -o "GRUZIK3.0.elf" @"objects.list"   -mcpu=cortex-m4 -T"D:\SN-USER\Projects\GRUZIK3.0-light\Software\GRUZIK3.0_Code\GRUZIK3.0\STM32G474RETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="GRUZIK3.0.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -u _printf_float -Wl,--start-group -lc -lm -Wl,--end-group
+C:/ST/STM32CubeIDE_1.19.0/STM32CubeIDE/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.13.3.rel1.win32_1.0.0.202411081344/tools/bin/../lib/gcc/arm-none-eabi/13.3.1/../../../../arm-none-eabi/bin/ld.exe: warning: GRUZIK3.0.elf has a LOAD segment with RWX permissions
+Finished building target: GRUZIK3.0.elf
+ 
+arm-none-eabi-size  GRUZIK3.0.elf 
+arm-none-eabi-objdump -h -S GRUZIK3.0.elf  > "GRUZIK3.0.list"
+   text	   data	    bss	    dec	    hex	filename
+  91780	    504	  29016	 121300	  1d9d4	GRUZIK3.0.elf
+Finished building: default.size.stdout
+ 
+Finished building: GRUZIK3.0.list
+ 
+23:05:04 **** Incremental Build of configuration Debug for project GRUZIK3.0 ****
+make -j8 all 
+arm-none-eabi-size  GRUZIK3.0.elf 
+   text	   data	    bss	    dec	    hex	filename
+  91780	    504	  29016	 121300	  1d9d4	GRUZIK3.0.elf
+Finished building: default.size.stdout
+ 
+23:05:55 **** Incremental Build of configuration Debug for project GRUZIK3.0 ****
+make -j8 all 
+arm-none-eabi-size  GRUZIK3.0.elf 
+   text	   data	    bss	    dec	    hex	filename
+  91780	    504	  29016	 121300	  1d9d4	GRUZIK3.0.elf
+Finished building: default.size.stdout
+ 
+23:09:07 **** Incremental Build of configuration Debug for project GRUZIK3.0 ****
+make -j8 all 
+arm-none-eabi-gcc "../Core/Src/main.c" -mcpu=cortex-m4 -std=gnu11 -g3 -DDEBUG -DUSE_HAL_DRIVER -DSTM32G474xx -c -I../Core/Inc -I../Drivers/STM32G4xx_HAL_Driver/Inc -I../Drivers/STM32G4xx_HAL_Driver/Inc/Legacy -I../Drivers/CMSIS/Device/ST/STM32G4xx/Include -I../Drivers/CMSIS/Include -I../FATFS/Target -I../FATFS/App -I../Middlewares/Third_Party/FatFs/src -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Core/Src/main.d" -MT"Core/Src/main.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Core/Src/main.o"
+arm-none-eabi-gcc -o "GRUZIK3.0.elf" @"objects.list"   -mcpu=cortex-m4 -T"D:\SN-USER\Projects\GRUZIK3.0-light\Software\GRUZIK3.0_Code\GRUZIK3.0\STM32G474RETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="GRUZIK3.0.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -u _printf_float -Wl,--start-group -lc -lm -Wl,--end-group
+C:/ST/STM32CubeIDE_1.19.0/STM32CubeIDE/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.13.3.rel1.win32_1.0.0.202411081344/tools/bin/../lib/gcc/arm-none-eabi/13.3.1/../../../../arm-none-eabi/bin/ld.exe: warning: GRUZIK3.0.elf has a LOAD segment with RWX permissions
+Finished building target: GRUZIK3.0.elf
+ 
+arm-none-eabi-size  GRUZIK3.0.elf 
+arm-none-eabi-objdump -h -S GRUZIK3.0.elf  > "GRUZIK3.0.list"
+   text	   data	    bss	    dec	    hex	filename
+  91780	    504	  29016	 121300	  1d9d4	GRUZIK3.0.elf
+Finished building: default.size.stdout
+ 
+Finished building: GRUZIK3.0.list
+ 
+23:10:32 **** Incremental Build of configuration Debug for project GRUZIK3.0 ****
+make -j8 all 
+arm-none-eabi-size  GRUZIK3.0.elf 
+   text	   data	    bss	    dec	    hex	filename
+  91780	    504	  29016	 121300	  1d9d4	GRUZIK3.0.elf
+Finished building: default.size.stdout
+ 
+23:13:51 **** Incremental Build of configuration Debug for project GRUZIK3.0 ****
+make -j8 all 
+arm-none-eabi-gcc "../Core/Src/main.c" -mcpu=cortex-m4 -std=gnu11 -g3 -DDEBUG -DUSE_HAL_DRIVER -DSTM32G474xx -c -I../Core/Inc -I../Drivers/STM32G4xx_HAL_Driver/Inc -I../Drivers/STM32G4xx_HAL_Driver/Inc/Legacy -I../Drivers/CMSIS/Device/ST/STM32G4xx/Include -I../Drivers/CMSIS/Include -I../FATFS/Target -I../FATFS/App -I../Middlewares/Third_Party/FatFs/src -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Core/Src/main.d" -MT"Core/Src/main.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Core/Src/main.o"
+arm-none-eabi-gcc -o "GRUZIK3.0.elf" @"objects.list"   -mcpu=cortex-m4 -T"D:\SN-USER\Projects\GRUZIK3.0-light\Software\GRUZIK3.0_Code\GRUZIK3.0\STM32G474RETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="GRUZIK3.0.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -u _printf_float -Wl,--start-group -lc -lm -Wl,--end-group
+C:/ST/STM32CubeIDE_1.19.0/STM32CubeIDE/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.13.3.rel1.win32_1.0.0.202411081344/tools/bin/../lib/gcc/arm-none-eabi/13.3.1/../../../../arm-none-eabi/bin/ld.exe: warning: GRUZIK3.0.elf has a LOAD segment with RWX permissions
+Finished building target: GRUZIK3.0.elf
+ 
+arm-none-eabi-size  GRUZIK3.0.elf 
+arm-none-eabi-objdump -h -S GRUZIK3.0.elf  > "GRUZIK3.0.list"
+   text	   data	    bss	    dec	    hex	filename
+  91780	    504	  29016	 121300	  1d9d4	GRUZIK3.0.elf
+Finished building: default.size.stdout
+ 
+Finished building: GRUZIK3.0.list
+ 
+23:16:21 **** Incremental Build of configuration Debug for project GRUZIK3.0 ****
+make -j8 all 
+arm-none-eabi-gcc "../Core/Src/main.c" -mcpu=cortex-m4 -std=gnu11 -g3 -DDEBUG -DUSE_HAL_DRIVER -DSTM32G474xx -c -I../Core/Inc -I../Drivers/STM32G4xx_HAL_Driver/Inc -I../Drivers/STM32G4xx_HAL_Driver/Inc/Legacy -I../Drivers/CMSIS/Device/ST/STM32G4xx/Include -I../Drivers/CMSIS/Include -I../FATFS/Target -I../FATFS/App -I../Middlewares/Third_Party/FatFs/src -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Core/Src/main.d" -MT"Core/Src/main.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Core/Src/main.o"
+arm-none-eabi-gcc -o "GRUZIK3.0.elf" @"objects.list"   -mcpu=cortex-m4 -T"D:\SN-USER\Projects\GRUZIK3.0-light\Software\GRUZIK3.0_Code\GRUZIK3.0\STM32G474RETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="GRUZIK3.0.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -u _printf_float -Wl,--start-group -lc -lm -Wl,--end-group
+C:/ST/STM32CubeIDE_1.19.0/STM32CubeIDE/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.13.3.rel1.win32_1.0.0.202411081344/tools/bin/../lib/gcc/arm-none-eabi/13.3.1/../../../../arm-none-eabi/bin/ld.exe: warning: GRUZIK3.0.elf has a LOAD segment with RWX permissions
+Finished building target: GRUZIK3.0.elf
+ 
+arm-none-eabi-size  GRUZIK3.0.elf 
+arm-none-eabi-objdump -h -S GRUZIK3.0.elf  > "GRUZIK3.0.list"
+   text	   data	    bss	    dec	    hex	filename
+  91780	    504	  29016	 121300	  1d9d4	GRUZIK3.0.elf
+Finished building: default.size.stdout
+ 
+Finished building: GRUZIK3.0.list
+ 
+23:18:55 **** Incremental Build of configuration Debug for project GRUZIK3.0 ****
+make -j8 all 
+arm-none-eabi-gcc "../Core/Src/main.c" -mcpu=cortex-m4 -std=gnu11 -g3 -DDEBUG -DUSE_HAL_DRIVER -DSTM32G474xx -c -I../Core/Inc -I../Drivers/STM32G4xx_HAL_Driver/Inc -I../Drivers/STM32G4xx_HAL_Driver/Inc/Legacy -I../Drivers/CMSIS/Device/ST/STM32G4xx/Include -I../Drivers/CMSIS/Include -I../FATFS/Target -I../FATFS/App -I../Middlewares/Third_Party/FatFs/src -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Core/Src/main.d" -MT"Core/Src/main.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Core/Src/main.o"
+arm-none-eabi-gcc -o "GRUZIK3.0.elf" @"objects.list"   -mcpu=cortex-m4 -T"D:\SN-USER\Projects\GRUZIK3.0-light\Software\GRUZIK3.0_Code\GRUZIK3.0\STM32G474RETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="GRUZIK3.0.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -u _printf_float -Wl,--start-group -lc -lm -Wl,--end-group
+C:/ST/STM32CubeIDE_1.19.0/STM32CubeIDE/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.13.3.rel1.win32_1.0.0.202411081344/tools/bin/../lib/gcc/arm-none-eabi/13.3.1/../../../../arm-none-eabi/bin/ld.exe: warning: GRUZIK3.0.elf has a LOAD segment with RWX permissions
+Finished building target: GRUZIK3.0.elf
+ 
+arm-none-eabi-size  GRUZIK3.0.elf 
+arm-none-eabi-objdump -h -S GRUZIK3.0.elf  > "GRUZIK3.0.list"
+   text	   data	    bss	    dec	    hex	filename
+  91780	    504	  29016	 121300	  1d9d4	GRUZIK3.0.elf
+Finished building: default.size.stdout
+ 
+Finished building: GRUZIK3.0.list
+ 
+23:23:13 **** Incremental Build of configuration Debug for project GRUZIK3.0 ****
+make -j8 all 
+arm-none-eabi-gcc "../Core/Src/main.c" -mcpu=cortex-m4 -std=gnu11 -g3 -DDEBUG -DUSE_HAL_DRIVER -DSTM32G474xx -c -I../Core/Inc -I../Drivers/STM32G4xx_HAL_Driver/Inc -I../Drivers/STM32G4xx_HAL_Driver/Inc/Legacy -I../Drivers/CMSIS/Device/ST/STM32G4xx/Include -I../Drivers/CMSIS/Include -I../FATFS/Target -I../FATFS/App -I../Middlewares/Third_Party/FatFs/src -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Core/Src/main.d" -MT"Core/Src/main.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Core/Src/main.o"
+arm-none-eabi-gcc -o "GRUZIK3.0.elf" @"objects.list"   -mcpu=cortex-m4 -T"D:\SN-USER\Projects\GRUZIK3.0-light\Software\GRUZIK3.0_Code\GRUZIK3.0\STM32G474RETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="GRUZIK3.0.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -u _printf_float -Wl,--start-group -lc -lm -Wl,--end-group
+C:/ST/STM32CubeIDE_1.19.0/STM32CubeIDE/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.13.3.rel1.win32_1.0.0.202411081344/tools/bin/../lib/gcc/arm-none-eabi/13.3.1/../../../../arm-none-eabi/bin/ld.exe: warning: GRUZIK3.0.elf has a LOAD segment with RWX permissions
+Finished building target: GRUZIK3.0.elf
+ 
+arm-none-eabi-size  GRUZIK3.0.elf 
+arm-none-eabi-objdump -h -S GRUZIK3.0.elf  > "GRUZIK3.0.list"
+   text	   data	    bss	    dec	    hex	filename
+  91780	    504	  29016	 121300	  1d9d4	GRUZIK3.0.elf
+Finished building: default.size.stdout
+ 
+Finished building: GRUZIK3.0.list
+ 
+23:27:01 **** Incremental Build of configuration Debug for project GRUZIK3.0 ****
+make -j8 all 
+arm-none-eabi-gcc "../Core/Src/main.c" -mcpu=cortex-m4 -std=gnu11 -g3 -DDEBUG -DUSE_HAL_DRIVER -DSTM32G474xx -c -I../Core/Inc -I../Drivers/STM32G4xx_HAL_Driver/Inc -I../Drivers/STM32G4xx_HAL_Driver/Inc/Legacy -I../Drivers/CMSIS/Device/ST/STM32G4xx/Include -I../Drivers/CMSIS/Include -I../FATFS/Target -I../FATFS/App -I../Middlewares/Third_Party/FatFs/src -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Core/Src/main.d" -MT"Core/Src/main.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Core/Src/main.o"
+arm-none-eabi-gcc -o "GRUZIK3.0.elf" @"objects.list"   -mcpu=cortex-m4 -T"D:\SN-USER\Projects\GRUZIK3.0-light\Software\GRUZIK3.0_Code\GRUZIK3.0\STM32G474RETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="GRUZIK3.0.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -u _printf_float -Wl,--start-group -lc -lm -Wl,--end-group
+C:/ST/STM32CubeIDE_1.19.0/STM32CubeIDE/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.13.3.rel1.win32_1.0.0.202411081344/tools/bin/../lib/gcc/arm-none-eabi/13.3.1/../../../../arm-none-eabi/bin/ld.exe: warning: GRUZIK3.0.elf has a LOAD segment with RWX permissions
+Finished building target: GRUZIK3.0.elf
+ 
+arm-none-eabi-size  GRUZIK3.0.elf 
+arm-none-eabi-objdump -h -S GRUZIK3.0.elf  > "GRUZIK3.0.list"
+   text	   data	    bss	    dec	    hex	filename
+  91780	    504	  29016	 121300	  1d9d4	GRUZIK3.0.elf
+Finished building: default.size.stdout
+ 
+Finished building: GRUZIK3.0.list
+ 
+23:30:47 **** Incremental Build of configuration Debug for project GRUZIK3.0 ****
+make -j8 all 
+arm-none-eabi-gcc "../Core/Src/main.c" -mcpu=cortex-m4 -std=gnu11 -g3 -DDEBUG -DUSE_HAL_DRIVER -DSTM32G474xx -c -I../Core/Inc -I../Drivers/STM32G4xx_HAL_Driver/Inc -I../Drivers/STM32G4xx_HAL_Driver/Inc/Legacy -I../Drivers/CMSIS/Device/ST/STM32G4xx/Include -I../Drivers/CMSIS/Include -I../FATFS/Target -I../FATFS/App -I../Middlewares/Third_Party/FatFs/src -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Core/Src/main.d" -MT"Core/Src/main.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Core/Src/main.o"
+arm-none-eabi-gcc -o "GRUZIK3.0.elf" @"objects.list"   -mcpu=cortex-m4 -T"D:\SN-USER\Projects\GRUZIK3.0-light\Software\GRUZIK3.0_Code\GRUZIK3.0\STM32G474RETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="GRUZIK3.0.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -u _printf_float -Wl,--start-group -lc -lm -Wl,--end-group
+C:/ST/STM32CubeIDE_1.19.0/STM32CubeIDE/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.13.3.rel1.win32_1.0.0.202411081344/tools/bin/../lib/gcc/arm-none-eabi/13.3.1/../../../../arm-none-eabi/bin/ld.exe: warning: GRUZIK3.0.elf has a LOAD segment with RWX permissions
+Finished building target: GRUZIK3.0.elf
+ 
+arm-none-eabi-size  GRUZIK3.0.elf 
+arm-none-eabi-objdump -h -S GRUZIK3.0.elf  > "GRUZIK3.0.list"
+   text	   data	    bss	    dec	    hex	filename
+  91780	    504	  29016	 121300	  1d9d4	GRUZIK3.0.elf
+Finished building: default.size.stdout
+ 
+Finished building: GRUZIK3.0.list
+ 

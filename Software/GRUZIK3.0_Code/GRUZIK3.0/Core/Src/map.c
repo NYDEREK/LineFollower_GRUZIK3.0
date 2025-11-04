@@ -222,36 +222,57 @@ void DriveOnMap(Map_t *map, motor_t *MotorLeft, motor_t *MotorRight)
 }
 
 
-void MappingV2(Map_t *map, motor_t *MotorLeft, motor_t *MotorRight)
+void MapUpdateV2(Map_t *map, motor_t *MotorLeft, motor_t *MotorRight)
 {
-	uint8_t buffer[100];
-	map->AlhphaOri = 1; //100% IMU 0% encoders
-
-	//(3.1) -- Save XY
-	map->PreviousXri = map->Xri;
-	map->PreviousYri = map->Yri;
-
-	map->PreviousPci[0] = map->Pci[0];
-	map->PreviousPci[1] = map->Pci[1];
-
-	//(2.11) -- Translation In Measurement
-	float Ti = (MotorLeft->LpfDistanceInMeasurement + MotorRight->LpfDistanceInMeasurement) / 2;
-	//(2.12) -- Rotation In Measurement
-	float Ri = (MotorRight->LpfDistanceInMeasurement - MotorLeft->LpfDistanceInMeasurement) / (MAIN_PCB_LENGTH * 2 * 1.085);//1.085
-
-	//(2.13) -- Main PCB Position
-	map->Ori = map->Ori + (((1-map->AlhphaOri)*Ri) + (map->OriIMU * map->AlhphaOri));
-	map->Ori = normalize_angle(map->Ori);
-	map->Xri = map->Xri + ((Ti * cosf(map->Ori))/2);
-	map->Yri = map->Yri + ((Ti * sinf(map->Ori)))/2;
+    if(map->Mapping == 1)
+    {
+        // ustaw tunowalny współczynnik - 0..1: 1 -> tylko IMU, 0 -> tylko enkodery
+        // DLA MAPOWANIA możesz chcieć mniejszego alpha (np. 0.3), żeby zapisać "fizyczną" trasę
+    	 map->AlhphaOri = 1; //100% IMU 0% encoders
+        float alpha = map->AlhphaOri; // przypisz wcześniej, np map->alphaOri = 0.3f;
 
 
-	sprintf((char*)buffer, " %0.3f	%0.3f	%0.3f	%0.3f	%0.3f	%0.3f	%0.3f \n", map->Xri, map->Yri, map->Pci[0], map->Pci[1], (map->Ori / 0.01745329251f), GRUZIK.Error_P,GRUZIK.Error_D);
-	f_printf(&SdCardFile, (char*)buffer);
+        uint8_t buffer[120];
+
+        // Save previous
+        map->PreviousXri = map->Xri;
+        map->PreviousYri = map->Yri;
+        map->PreviousPci[0] = map->Pci[0];
+        map->PreviousPci[1] = map->Pci[1];
+
+        // Translation and rotation from encoders
+        float Ti = (MotorLeft->LpfDistanceInMeasurement + MotorRight->LpfDistanceInMeasurement) / 2.0f;//2.0f
+        float Ri = (MotorRight->LpfDistanceInMeasurement - MotorLeft->LpfDistanceInMeasurement) / (MAIN_PCB_LENGTH * 2.0f * 1.085f);
+
+        // Fuse IMU and encoders for orientation
+        map->Ori = map->Ori + ((1.0f - alpha) * Ri) + (map->OriIMU * alpha);
+        map->Ori = normalize_angle(map->Ori);
+
+        map->Xri = map->Xri + ((Ti * cosf(map->Ori))/2);
+        map->Yri = map->Yri + ((Ti * sinf(map->Ori)))/2;
+
+        // Sensor pos
+        map->Pci[0] = map->Xri + (MAIN_TO_SENSOR_LENGTH * cosf(map->Ori));
+        map->Pci[1] = map->Yri + (MAIN_TO_SENSOR_LENGTH * sinf(map->Ori));
+
+        // Curvature / path length for sensor
+        float dx = map->Pci[0] - map->PreviousPci[0];
+        float dy = map->Pci[1] - map->PreviousPci[1];
+        float dTi = sqrtf(dx*dx + dy*dy);
+        map->Si += dTi;
+
+        map->PreviousAi = map->Ai;
+        if(dTi != 0.0f)
+        {
+            map->Ai = atan2f(dy, dx);
+            float dAi = normalize_angle(map->Ai - map->PreviousAi);
+            map->Ki = dAi / dTi;
+        }
+
+        sprintf((char*)buffer, " %0.3f\t%0.3f\t%0.3f\t%0.3f\t%0.3f\t%0.3f\t%0.3f\n",
+                map->Xri, map->Yri, map->Pci[0], map->Pci[1], (map->Ori / (M_PI/180.0f)), GRUZIK.Error_P, GRUZIK.Error_D);
+        f_printf(&SdCardFile, (char*)buffer);
+    }
 }
-
-
-
-
 
 

@@ -188,11 +188,12 @@ int main(void)
   	HAL_ADC_Start_DMA(&hadc1, (uint32_t*)&GRUZIK.Adc_Value, 1);
 
   	/*Initial values for driving on Optimized route*/
-  	map.p = 0.14;//0.14
+  	map.p = 0.13;//0.14
   	map.i = 0;
-  	map.d = 14;//14
+  	map.d = 13;//14
 
-  	GRUZIK.DrivingOnMap = 0;
+  	GRUZIK.DrivingOnMap = 1;
+
 
   	/*Set initial values for PID*/
     GRUZIK.Kp = 0.015;
@@ -388,30 +389,23 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	    MPU6050_Get_Accel_Scale(&myAccelScaled);
 	    MPU6050_Get_Gyro_Scale(&myGyroScaled);
 
-	    //map.OriIMU = (((myGyroScaled.z * YAW_MEASUREMENT_PERIOD) - 0.00095)* 0.01745329251f) * 1.3325;//1.03325
-	   // MapUpdate(&map, &Motor_L, &Motor_R);
 	    Orientation += map.OriIMU / 0.01745329251f;
 
 		if(GRUZIK.blockinterrups == 0)
-		{
+		{															   // 0.001
 			if((GRUZIK.DrivingOnMap == 1)&&(SDReadingReady == 1))     // 0.0015
 			{                                                         // 0.00095
-			  map.OriIMU = (((myGyroScaled.z * YAW_MEASUREMENT_PERIOD) - 0.001)* 0.01745329251f) * 1;//1.03325
+			  map.OriIMU = (((myGyroScaled.z * YAW_MEASUREMENT_PERIOD) - 0.0015)* 0.01745329251f) * 1;//1.03325
 			  DriveOnMap(&map, &Motor_L, &Motor_R);
 			}
-			else if((GRUZIK.DrivingOnMap == 0)&&(SDReadingReady == 1))
-			{
-			  map.OriIMU = (((myGyroScaled.z * YAW_MEASUREMENT_PERIOD) + 0.0008)* 0.01745329251f) * 1.2705f;//1.3325 // zwiększenie zamyka trase
-			  MapUpdate(&map, &Motor_L, &Motor_R);                     //- 0.0065                    1.273
-			}
-																		//- 0.0065                    1.271
-																		//- 0.00625                   1.2705
-			else if((GRUZIK.DrivingOnMap == 2) && (SDReadingReady == 1))
-			{
-				map.OriIMU = (((myGyroScaled.z * YAW_MEASUREMENT_PERIOD) - 0.001)* 0.01745329251f) * 1;//1.03325
-				 MappingV2(&map, &Motor_L, &Motor_R);
-			}
+			else if((GRUZIK.DrivingOnMap == 0)&&(SDReadingReady == 1))// + 0.00200
+			{                                                         // + 0.00125
+			  map.OriIMU = (((myGyroScaled.z * YAW_MEASUREMENT_PERIOD) + 0.004)* 0.01745329251f) * 1.2705f;//1.3325 // zwiększenie zamyka trase
+//			  MapUpdate(&map, &Motor_L, &Motor_R);                     //- 0.0065                    1.273
 
+				//map.OriIMU = ((myGyroScaled.z * YAW_MEASUREMENT_PERIOD) - 0.001)* 0.01745329251f;
+				MapUpdateV2(&map, &Motor_L, &Motor_R);
+			}
 		}
 
 		  /*If there is a message form Bluetooth Parser it*/
