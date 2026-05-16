@@ -33,7 +33,7 @@
 #define ROBOT_ENCODER_STATIONARY_M          0.00002f
 #define ROBOT_GYRO_BIAS_LEARN_RATE          0.0005f
 
-#define ROBOT_MAP_RECORD_EVERY_TICKS        40u
+#define ROBOT_MAP_RECORD_EVERY_TICKS        4u
 #define ROBOT_MAP_TARGET_RADIUS_M           0.055f
 #define ROBOT_MAP_ADVANCE_LATERAL_M         0.120f
 #define ROBOT_MAP_CLOSE_RADIUS_M            0.030f

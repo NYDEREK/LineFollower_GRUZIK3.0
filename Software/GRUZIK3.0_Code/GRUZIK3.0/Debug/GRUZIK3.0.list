@@ -39,9 +39,9 @@ Idx Name          Size      VMA       LMA       File off  Algn
                   CONTENTS, READONLY, DEBUGGING, OCTETS
  17 .debug_line   00032d86  00000000  00000000  0005a851  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 18 .debug_str    0011f2d6  00000000  00000000  0008d5d7  2**0
+ 18 .debug_str    0011f2d5  00000000  00000000  0008d5d7  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 19 .comment      00000043  00000000  00000000  001ac8ad  2**0
+ 19 .comment      00000043  00000000  00000000  001ac8ac  2**0
                   CONTENTS, READONLY
  20 .debug_frame  0000b3ec  00000000  00000000  001ac8f0  2**2
                   CONTENTS, READONLY, DEBUGGING, OCTETS
@@ -11138,7 +11138,7 @@ uint8_t MapUpdate(Map_t *map, const Pose2D_t *pose, float speed_mps, float error
  8005992:	697b      	ldr	r3, [r7, #20]
  8005994:	f503 43a0 	add.w	r3, r3, #20480	@ 0x5000
  8005998:	f893 3e9a 	ldrb.w	r3, [r3, #3738]	@ 0xe9a
- 800599c:	2b27      	cmp	r3, #39	@ 0x27
+ 800599c:	2b03      	cmp	r3, #3
  800599e:	d93d      	bls.n	8005a1c <MapUpdate+0x4b0>
 	{
 		map->loopNumber = 0u;
