@@ -1,0 +1,4 @@
+../Core/Src/odometry.c:12:7:Odometry_NormalizeAngle	16	static
+../Core/Src/odometry.c:25:6:Odometry_Init	16	static
+../Core/Src/odometry.c:39:6:Odometry_Reset	24	static
+../Core/Src/odometry.c:46:6:Odometry_Update	64	static

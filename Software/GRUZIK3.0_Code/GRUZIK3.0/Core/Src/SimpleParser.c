@@ -1,604 +1,1095 @@
 /*
  * SimpleParser.c
  *
- *  Created on: Aug 28, 2024
- *      Author: Szymon
+ * UART command parser for the renewed GRUZIK3.0 firmware.
  */
 
-
-#include "main.h"
-#include "usart.h"
-#include "string.h"
-#include "stdio.h"
-#include "RingBuffer.h"
-#include "stdlib.h"
 #include "SimpleParser.h"
 #include "Line_Follower.h"
 #include "app_fatfs.h"
+#include "gpio.h"
 #include "map.h"
+#include "robot_config.h"
+#include "robot_settings.h"
+#include "tim.h"
+#include "usart.h"
+#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
 char My_Name[32] = "GRUZIK3.0";
 
-// -- SD card -- //
 extern FRESULT FatFsResult;
 extern FATFS SdFatFs;
 extern FIL SdCardFile;
-/*MAP*/
+extern uint8_t SDReadingReady;
 extern Map_t map;
 
-//void MappingMode_change(LineFollower_t *LF)
-//{
-//	char *ParsePointer = strtok(NULL, ",");
-//
-//	if(strlen(ParsePointer) > 0 && strlen(ParsePointer) < 32)
-//	{
-//		/*Get value 0 or 1*/
-//		if(atoi(ParsePointer) < 2)
-//		{
-//			LF->DrivingOnMap = atoi(ParsePointer);
-//		}
-//		else
-//		{
-//			return;
-//		}
-//	}
-//	/*Close the file and block reading of SD card for a moment*/
-//	LF->blockinterrups = 1;
-//	FatFsResult = f_close(&SdCardFile);
-//	FatFsResult = f_mount(NULL, "", 1);
-//
-//	//HAL_Delay(200);
-//
-//	FatFsResult = f_mount(&SdFatFs, "", 1);
-//
-//	/*if we want to read route from map we should open file with it */
-//	if(LF->DrivingOnMap == 1)
-//	{
-//		map.Mapping = 0;
-//		int SDReadingReady = 0;
-//
-//    	while(!SDReadingReady)
-//    	{
-//    		FatFsResult = f_open(&SdCardFile, "map.txt", FA_READ);
-//    		if(FatFsResult == FR_OK)
-//    		{
-//    			SDReadingReady = 1;
-//    			LF->blockinterrups = 0;
-//    			/*Toggle LEDs*/
-//    			HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_6);
-//    			HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_5);
-//    			return;
-//    		}
-//    		else
-//    		{
-//    			FatFsResult = f_close(&SdCardFile);
-//    		}
-//    	}
-//
-//	}
-//	/*if we want to map the route we should open file for it */
-//	else
-//	{
-//		int SDReadingReady = 0;
-//
-//    	while(!SDReadingReady)
-//    	{
-//    		FatFsResult = f_open(&SdCardFile, "GRUZIK.txt", FA_WRITE|FA_OPEN_APPEND);
-//    		if(FatFsResult == FR_OK)
-//    		{
-//    			SDReadingReady = 1;
-//    			LF->blockinterrups = 0;
-//    			/*Toggle LEDs*/
-//    			HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_6);
-//    			HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_5);
-//    			return;
-//    		}
-//    		else
-//    		{
-//    			FatFsResult = f_close(&SdCardFile);
-//    		}
-//    	}
-//
-//	}
-//
-//}
+volatile uint8_t TelemetryMode = TELEMETRY_OFF;
+volatile uint8_t TireCleaningActive = 0u;
+volatile uint8_t ManualDriveActive = 0u;
+
+static uint8_t SdFileOpen = 0u;
+static uint16_t MapUploadPointCount = 0u;
+static uint16_t MapUploadExpectedCount = 0u;
+static float TireCleanSpeed = 170.0f;
+static uint32_t ManualDriveLastTick = 0u;
+
+static void UartSend(const char *text)
+{
+	HAL_UART_Transmit(&hlpuart1, (uint8_t *)text, strlen(text), 500);
+}
+
+static const char *SettingsStatusText(RobotSettingsStatus_t status)
+{
+	switch(status)
+	{
+	case ROBOT_SETTINGS_OK:
+		return "ok";
+	case ROBOT_SETTINGS_EMPTY:
+		return "empty";
+	case ROBOT_SETTINGS_INVALID:
+		return "invalid";
+	default:
+		return "flash_error";
+	}
+}
+
+static char *NextValue(void)
+{
+	return strtok(NULL, ",");
+}
+
+static uint8_t ParseFloatValue(float *out)
+{
+	char *parse_pointer = NextValue();
+	if((parse_pointer == NULL) || (strlen(parse_pointer) == 0u) || (strlen(parse_pointer) >= 32u))
+	{
+		return 0u;
+	}
+
+	*out = strtof(parse_pointer, NULL);
+	return 1u;
+}
+
+static float ClampFloat(float value, float min_value, float max_value)
+{
+	if(value > max_value)
+	{
+		return max_value;
+	}
+	if(value < min_value)
+	{
+		return min_value;
+	}
+	return value;
+}
+
+static void SendFatFsError(const char *prefix, const char *operation, const char *file_name, FRESULT result)
+{
+	char tx[96];
+	snprintf(tx, sizeof(tx), "%s,%s,%s,%u\r\n", prefix, operation, file_name, (unsigned int)result);
+	UartSend(tx);
+}
+
+static uint8_t SdEnsureMounted(const char *context)
+{
+	FatFsResult = f_mount(&SdFatFs, "", 1);
+	if(FatFsResult == FR_OK)
+	{
+		SDReadingReady = 1u;
+		return 1u;
+	}
+
+	(void)f_mount(NULL, "", 0);
+	HAL_Delay(20);
+	FatFsResult = f_mount(&SdFatFs, "", 1);
+	if(FatFsResult == FR_OK)
+	{
+		SDReadingReady = 1u;
+		return 1u;
+	}
+
+	SDReadingReady = 0u;
+	SendFatFsError("SD_ERROR", "mount", context, FatFsResult);
+	return 0u;
+}
+
+static uint8_t SdOpenFile(const char *error_prefix, const char *operation, const char *file_name, BYTE mode)
+{
+	if(SdEnsureMounted(file_name) == 0u)
+	{
+		return 0u;
+	}
+
+	FatFsResult = f_open(&SdCardFile, file_name, mode);
+	if(FatFsResult == FR_OK)
+	{
+		return 1u;
+	}
+
+	(void)f_mount(NULL, "", 0);
+	HAL_Delay(20);
+	if(SdEnsureMounted(file_name) == 0u)
+	{
+		return 0u;
+	}
+
+	FatFsResult = f_open(&SdCardFile, file_name, mode);
+	if(FatFsResult == FR_OK)
+	{
+		return 1u;
+	}
+
+	SendFatFsError(error_prefix, operation, file_name, FatFsResult);
+	return 0u;
+}
+
 void Parser_TakeLine(RingBuffer_t *Buf, uint8_t *ReceivedData)
 {
-	uint8_t Tmp;
-	uint8_t i = 0;
+	uint8_t tmp = 0u;
+	uint8_t i = 0u;
+
 	do
 	{
-		RB_Read(Buf, &Tmp);
-
-		if(Tmp == ENDLINE)
+		if(RB_Read(Buf, &tmp) != RB_OK)
 		{
-			ReceivedData[i] = 0;
-
+			ReceivedData[i] = 0u;
+			return;
 		}
 
-		else
+		if(tmp == ENDLINE)
 		{
-			ReceivedData[i] = Tmp;
+			ReceivedData[i] = 0u;
 		}
-		i++;
-
-	} while(Tmp != ENDLINE);
-
+		else if((tmp != '\r') && (i < (PARSER_LINE_BUFFER_SIZE - 1u)))
+		{
+			ReceivedData[i++] = tmp;
+		}
+	} while(tmp != ENDLINE);
 }
 
 static void kp_change(LineFollower_t *LF)
 {
-	char *ParsePointer = strtok(NULL, ",");
-
-	if(strlen(ParsePointer) > 0 && strlen(ParsePointer) < 32)
+	if(ParseFloatValue(&LF->Kp))
 	{
-		LF->Kp = atof(ParsePointer);
+		RobotSettings_RequestSave();
 	}
-
 }
+
 static void kd_change(LineFollower_t *LF)
 {
-	char *ParsePointer = strtok(NULL, ",");
-
-	if(strlen(ParsePointer) > 0 && strlen(ParsePointer) < 32)
+	if(ParseFloatValue(&LF->Kd))
 	{
-		LF->Kd = atof(ParsePointer);
+		RobotSettings_RequestSave();
 	}
 }
+
 static void Base_speed_change(LineFollower_t *LF)
 {
-	char *ParsePointer = strtok(NULL, ",");
-
-	if(strlen(ParsePointer) > 0 && strlen(ParsePointer) < 32)
+	float speed = 0.0f;
+	if(ParseFloatValue(&speed))
 	{
-		LF->Base_speed_R = atof(ParsePointer);
-		LF->Base_speed_L = atof(ParsePointer);
+		LF->Base_speed_R = (int)speed;
+		LF->Base_speed_L = (int)speed;
+		RobotSettings_RequestSave();
 	}
 }
 
 static void Max_speed_change(LineFollower_t *LF)
 {
-	char *ParsePointer = strtok(NULL, ",");
-
-	if(strlen(ParsePointer) > 0 && strlen(ParsePointer) < 32)
+	float speed = 0.0f;
+	if(ParseFloatValue(&speed))
 	{
-		LF->Max_speed_R = atof(ParsePointer);
-		LF->Max_speed_L = atof(ParsePointer);
+		LF->Max_speed_R = (int)speed;
+		LF->Max_speed_L = (int)speed;
+		RobotSettings_RequestSave();
 	}
 }
+
+static void Sensor_treshold_change(LineFollower_t *LF)
+{
+	float threshold = 0.0f;
+	if(ParseFloatValue(&threshold))
+	{
+		LF->treshold = (uint16_t)threshold;
+		RobotSettings_RequestSave();
+	}
+}
+
 static void Sharp_bend_speed_right_change(LineFollower_t *LF)
 {
-	char *ParsePointer = strtok(NULL, ",");
-
-	if(strlen(ParsePointer) > 0 && strlen(ParsePointer) < 32)
+	float value = 0.0f;
+	if(ParseFloatValue(&value))
 	{
-	LF->Sharp_bend_speed_right = atof(ParsePointer);
+		LF->Sharp_bend_speed_right = (int)value;
+		RobotSettings_RequestSave();
 	}
 }
+
 static void Sharp_bend_speed_left_change(LineFollower_t *LF)
 {
-	char *ParsePointer = strtok(NULL, ",");
-
-	if(strlen(ParsePointer) > 0 && strlen(ParsePointer) < 32)
+	float value = 0.0f;
+	if(ParseFloatValue(&value))
 	{
-	LF->Sharp_bend_speed_left = atof(ParsePointer);
+		LF->Sharp_bend_speed_left = (int)value;
+		RobotSettings_RequestSave();
 	}
 }
+
 static void Bend_speed_right_change(LineFollower_t *LF)
 {
-	char *ParsePointer = strtok(NULL, ",");
-
-	if(strlen(ParsePointer) > 0 && strlen(ParsePointer) < 32)
+	float value = 0.0f;
+	if(ParseFloatValue(&value))
 	{
-	LF->Bend_speed_right = atof(ParsePointer);
+		LF->Bend_speed_right = (int)value;
+		RobotSettings_RequestSave();
 	}
 }
+
 static void Bend_speed_left_change(LineFollower_t *LF)
 {
-	char *ParsePointer = strtok(NULL, ",");
-
-	if(strlen(ParsePointer) > 0 && strlen(ParsePointer) < 32)
+	float value = 0.0f;
+	if(ParseFloatValue(&value))
 	{
-	LF->Bend_speed_left = atof(ParsePointer);
+		LF->Bend_speed_left = (int)value;
+		RobotSettings_RequestSave();
 	}
 }
-void App_Controll(char RxData, LineFollower_t *LineFollower)
+
+static void Map_p_change(void)
 {
-	/*Stop robot*/
-	if(RxData == 'N')
+	if(ParseFloatValue(&map.p))
 	{
-		uint8_t buffer[128];
-		/*Stop GRUZIK2.0 and turn off the LED*/
-		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, GPIO_PIN_RESET);
-		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_5, GPIO_PIN_RESET);
-		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, GPIO_PIN_RESET);
-
-		/*Send battery voltage*/
-		LineFollower->battery_voltage = (LineFollower->Adc_Value * 8.3)/3831;
-		sprintf((char*)buffer, "ADC_Value = %d \r\n Battery_Voltage = %0.2f V \r\n", LineFollower->Adc_Value, LineFollower->battery_voltage);
-		HAL_UART_Transmit(&hlpuart1, buffer, strlen((char*)buffer), 100);
-
-		/*Stop mapping the track*/
-		map.Mapping = 0;
-		FatFsResult = f_close(&SdCardFile);
-
+		RobotSettings_RequestSave();
 	}
-	/*Start robot*/
-	if (RxData == 'Y')
+}
+
+static void Map_i_change(void)
+{
+	if(ParseFloatValue(&map.i))
 	{
-		/*Proportional to battery percentage boost for motors
-		 * to keep roughly same speed as with full battery*/
-		float battery_percentage;
-		uint8_t buffer[128];
-		//Calculate battery percentage based on battery voltage
-		LineFollower->battery_voltage = (LineFollower->Adc_Value * 8.3)/3831;
+		RobotSettings_RequestSave();
+	}
+}
 
-		//Full battery voltage in working line follower is about 8.24V
-		battery_percentage = (LineFollower->battery_voltage / 8.24) * 100;
+static void Map_d_change(void)
+{
+	if(ParseFloatValue(&map.d))
+	{
+		RobotSettings_RequestSave();
+	}
+}
 
-		/*To don't damage 2s LiPo battery Line follower can't start with battery below 7.2V*/
-		if (LineFollower->battery_voltage < 7.2)
+static void Map_speed_change(void)
+{
+	if(ParseFloatValue(&map.DefaultPlaybackSpeed))
+	{
+		RobotSettings_RequestSave();
+	}
+}
+
+static void Tire_clean_speed_change(void)
+{
+	float speed = 0.0f;
+	if(ParseFloatValue(&speed))
+	{
+		TireCleanSpeed = ClampFloat(speed, 0.0f, 250.0f);
+	}
+}
+
+static void StopRobot(LineFollower_t *LF)
+{
+	LF->LineFollowing = 0u;
+	LF->PowerMode = Stop;
+	map.Mapping = 0u;
+	map.PlaybackActive = 0u;
+	TireCleaningActive = 0u;
+	ManualDriveActive = 0u;
+
+	motor_control(0.0, 0.0);
+	HAL_GPIO_WritePin(Motor_STBY_GPIO_Port, Motor_STBY_Pin, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(LED_4_GPIO_Port, LED_4_Pin, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(LED_3_GPIO_Port, LED_3_Pin, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(LED_2_GPIO_Port, LED_2_Pin, GPIO_PIN_RESET);
+
+	if(SdFileOpen != 0u)
+	{
+		f_close(&SdCardFile);
+		SdFileOpen = 0u;
+	}
+
+	LF->battery_voltage = ((float)LF->Adc_Value * 8.3f) / 3831.0f;
+
+	char buffer[160];
+	snprintf(buffer, sizeof(buffer),
+			 "Stop\r\nADC_Value = %u\r\nBattery = %0.2f V\r\nAverageSpeed = %0.2f m/s\r\nMaxSpeed = %0.2f m/s\r\n",
+			 LF->Adc_Value, LF->battery_voltage, LF->AverageSpeed, LF->MaxSpeed);
+	UartSend(buffer);
+
+	LF->AverageSpeed = 0.0f;
+	LF->MaxSpeed = 0.0f;
+	LF->AverageSpeedNum = 0.0f;
+	LF->AverageSpeedSum = 0.0f;
+}
+
+static void PrepareStoppedStart(LineFollower_t *LF)
+{
+	LF->LineFollowing = 0u;
+	LF->PowerMode = Stop;
+	map.Mapping = 0u;
+	map.PlaybackActive = 0u;
+	TelemetryMode = TELEMETRY_OFF;
+	TireCleaningActive = 0u;
+	ManualDriveActive = 0u;
+
+	motor_control(0.0, 0.0);
+	HAL_GPIO_WritePin(Motor_STBY_GPIO_Port, Motor_STBY_Pin, GPIO_PIN_RESET);
+
+	if(SdFileOpen != 0u)
+	{
+		f_close(&SdCardFile);
+		SdFileOpen = 0u;
+	}
+
+	LF->AverageSpeed = 0.0f;
+	LF->MaxSpeed = 0.0f;
+	LF->AverageSpeedNum = 0.0f;
+	LF->AverageSpeedSum = 0.0f;
+}
+
+static void StartRobot(LineFollower_t *LF)
+{
+	char buffer[160];
+	float battery_percentage;
+
+	LF->battery_voltage = ((float)LF->Adc_Value * 8.3f) / 3831.0f;
+	battery_percentage = (LF->battery_voltage / 8.24f) * 100.0f;
+
+	if(LF->battery_voltage < 7.0f)
+	{
+		UartSend("! Low Battery !\r\n");
+	}
+
+	LF->Speed_level = ((200.0f - battery_percentage) / 100.0f) - LF->Speed_offset;
+	if(LF->Speed_level < 1.0f)
+	{
+		LF->Speed_level = 1.0f;
+	}
+
+	Map_Reset(&map);
+	Robot_ResetOdometry();
+	LF->Yaw = 0.0f;
+	LF->Orientation = 0.0f;
+	LF->Last_error = 0.0f;
+	LF->P = 0.0f;
+	LF->D = 0.0f;
+	LF->Error_P = 0.0f;
+	LF->Error_D = 0.0f;
+	LF->Last_idle = 0;
+	LF->LastEndTimer = HAL_GetTick();
+	LF->UnMappingDone = 0u;
+
+	if(LF->state == Mapping)
+	{
+		if(SdOpenFile("MAP_ERROR", "open_write", ROBOT_MAP_OUTPUT_FILE, FA_WRITE | FA_CREATE_ALWAYS) == 0u)
 		{
-			sprintf((char*)buffer, "! Low Battery !\r\n");
-			HAL_UART_Transmit(&hlpuart1, buffer, strlen((char*)buffer), 100);
 			return;
 		}
-		/*Motor speed*/
-		LineFollower->Speed_level = ((100 - battery_percentage + 100) / 100) - LineFollower->Speed_offset;
-
-		if(LineFollower->Speed_level < 1)
+		SdFileOpen = 1u;
+		map.Mapping = 1u;
+	}
+	else if(LF->state == UnMapping)
+	{
+		if(SdOpenFile("MAP_ERROR", "open_playback", ROBOT_MAP_INPUT_FILE, FA_READ) == 0u)
 		{
-			LineFollower->Speed_level = 1;
+			return;
 		}
-
-		/*Send battery data*/
-		LineFollower->battery_voltage = (LineFollower->Adc_Value * 8.3)/3831;
-		sprintf((char*)buffer, "ADC_Value = %d \r\n Battery_Voltage = %0.2f V \r\n", LineFollower->Adc_Value, LineFollower->battery_voltage);
-		HAL_UART_Transmit(&hlpuart1, buffer, strlen((char*)buffer), 100);
-
-
-		sprintf((char*)buffer, "Percentage = %0.2f \r\n Speed_level = %0.2f \r\n", battery_percentage, LineFollower->Speed_level);
-		HAL_UART_Transmit(&hlpuart1, buffer, strlen((char*)buffer), 100);
-
-		/*Stop LineFollower and turn on the LED*/
-		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, GPIO_PIN_SET);
-		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_5, GPIO_PIN_SET);
-		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, GPIO_PIN_SET);
-
-		/*Start mapping the track*/
-//	    if(LineFollower->DrivingOnMap != 1)
-//	    {
-//	    	FatFsResult = f_close(&SdCardFile);
-//	    	while(!map.Mapping)
-//	    	{
-//	    		FatFsResult = f_open(&SdCardFile, "GRUZIK.txt", FA_WRITE|FA_OPEN_APPEND);
-//	    		if(FatFsResult == FR_OK)
-//	    		{
-//	    			map.Mapping = 1;
-//	    		}
-//	    		else
-//	    		{
-//	    			FatFsResult = f_close(&SdCardFile);
-//	    		}
-//	    	}
-//	    	FatFsResult = f_open(&SdCardFile, "GRUZIK.txt", FA_WRITE|FA_OPEN_APPEND);
-//	    	map.Mapping = 1;
-//	    }
-//	    else
-//	    {gf
-//	    	FatFsResult = f_open(&SdCardFile, "map.txt", FA_READ);
-//	    }
-//		FatFsResult = f_close(&SdCardFile);
-//		HAL_Delay(1000);
-		if(LineFollower->state == Mappig)
+		SdFileOpen = 1u;
+		if(Map_BeginPlayback(&map) == 0u)
 		{
-			FatFsResult = f_open(&SdCardFile, "GRUZIK.txt", FA_WRITE|FA_OPEN_APPEND);
-			map.Mapping = 1;
+			UartSend("map.txt is empty or invalid\r\n");
+			f_close(&SdCardFile);
+			SdFileOpen = 0u;
+			return;
 		}
-		map.Ori = 0;
 	}
-	/*LOW mode*/
-	if(RxData == 'a')
-	{
-		LineFollower->Base_speed_R = 85;//85
-		LineFollower->Base_speed_L = 85;
-		LineFollower->Max_speed_L = 165;//100
-		LineFollower->Max_speed_R = 165;
-		LineFollower->Sharp_bend_speed_right = -40;
-		LineFollower->Sharp_bend_speed_left = 90;
-		LineFollower->Bend_speed_right = -50;
-		LineFollower->Bend_speed_left = 80;
-		LineFollower->Kp = 0.015;
-		LineFollower->Kd = 0.085;
-	}
-	/*LOW+ mode*/
-	if(RxData == 'd')
-	{
-		LineFollower->Base_speed_R = 95;
-		LineFollower->Base_speed_L = 95;
-		LineFollower->Max_speed_L = 150; // (120->150)//150
-		LineFollower->Max_speed_R = 150;
-		LineFollower->Sharp_bend_speed_right = -30;
-		LineFollower->Sharp_bend_speed_left = 100;
-		LineFollower->Bend_speed_right = -40;
-		LineFollower->Bend_speed_left = 80;
-		LineFollower->Kp = 0.015;
-		LineFollower->Kd = 0.08;
-	}
-	/*Medium mode*/
-	if(RxData == 'b')
-	{
-		LineFollower->Base_speed_R = 102;
-		LineFollower->Base_speed_L = 102;
-		LineFollower->Max_speed_L = 145;
-		LineFollower->Max_speed_R = 145;
-		LineFollower->Sharp_bend_speed_right = -30;
-		LineFollower->Sharp_bend_speed_left = 100;
-		LineFollower->Bend_speed_right = -40;
-		LineFollower->Bend_speed_left = 80;
-		LineFollower->Kp = 0.015;
-		LineFollower->Kd = 0.08;
-	}
-	/*Medium+ mode*/
-	if(RxData == 'e')
-	{
-		LineFollower->Base_speed_R = 105;
-		LineFollower->Base_speed_L = 105;
-		LineFollower->Max_speed_L = 152;//175 //TODO: albo 170
-		LineFollower->Max_speed_R = 152;//175
-		LineFollower->Sharp_bend_speed_right = -30;
-		LineFollower->Sharp_bend_speed_left = 90;//90
-		LineFollower->Bend_speed_right = -40;//-40
-		LineFollower->Bend_speed_left = 80;//80
-		LineFollower->Kp = 0.015;
-		LineFollower->Kd = 0.08;//0.9
-	}
-	/*HIGH mode*/
-	if(RxData == 'c')
-	{
-		LineFollower->Base_speed_R = 100;
-		LineFollower->Base_speed_L = 100;
-		LineFollower->Max_speed_L = 165;//125
-		LineFollower->Max_speed_R = 165;//125
-		LineFollower->Sharp_bend_speed_right = -20;
-		LineFollower->Sharp_bend_speed_left = 110; //88
-		LineFollower->Bend_speed_right = -40;
-		LineFollower->Bend_speed_left = 80;
-		LineFollower->Kp = 0.015;
-		LineFollower->Kd = 0.08;//0.2
-	}
-	/*HIGH+ mode*/
-	if(RxData == 'f')
-	{
-		LineFollower->Base_speed_R = 115;
-		LineFollower->Base_speed_L = 115;
-		LineFollower->Max_speed_L = 175;
-		LineFollower->Max_speed_R = 175;
-		LineFollower->Sharp_bend_speed_right = -20;
-		LineFollower->Sharp_bend_speed_left = 110; //88
-		LineFollower->Bend_speed_right = -40;
-		LineFollower->Bend_speed_left = 80;
-		LineFollower->Kp = 0.015;
-		LineFollower->Kd = 0.08;//0.2
-	}
-	/*TRUBO mode*/
-	if(RxData == 'i')
-	{
-		LineFollower->Base_speed_R = 135;
-		LineFollower->Base_speed_L = 135;
-		LineFollower->Max_speed_L = 135;
-		LineFollower->Max_speed_R = 135;
-		LineFollower->Sharp_bend_speed_right = -60; //-65
-		LineFollower->Sharp_bend_speed_left = 70;
-		LineFollower->Bend_speed_right = -60;
-		LineFollower->Bend_speed_left = 110;
-		LineFollower->Kp = 0.015;
-		LineFollower->Kd = 0.2;
-	}
-	/*TRUBO+ mode*/
-	if(RxData == 'j')
-	{
-	   LineFollower->Base_speed_R = 140;
-	   LineFollower->Base_speed_L = 140;
-	   LineFollower->Max_speed_L = 140;
-	   LineFollower->Max_speed_R = 140;
-	   LineFollower->Sharp_bend_speed_right = -60;
-	   LineFollower->Sharp_bend_speed_left = 70;
-	   LineFollower->Bend_speed_right = -60;
-	   LineFollower->Bend_speed_left = 110;
-	   LineFollower->Kp = 0.015;
-	   LineFollower->Kd = 0.2;
-	}
-	/*ULTRA mode*/
-	if(RxData == 'k')
-	{
-		LineFollower->Base_speed_R = 145;
-		LineFollower->Base_speed_L = 145;
-		LineFollower->Max_speed_L = 145;
-		LineFollower->Max_speed_R = 145;
-		LineFollower->Sharp_bend_speed_right = -60;//-70
-		LineFollower->Sharp_bend_speed_left = 70;//88
-		LineFollower->Bend_speed_right = -60;
-		LineFollower->Bend_speed_left = 110;
-		LineFollower->Kp = 0.015;
-		LineFollower->Kd = 0.22;     //Jeśli sie gubi wylaturje itd mozna zwiększyć jesli sobie radzi to mozna obniżyc i zwiększyc płynność
-	 }
-	 /*ULTRA+ mode*/
-	 if(RxData == 'l')
-	 {
-		LineFollower->Base_speed_R = 150;
-		LineFollower->Base_speed_L = 150;
-		LineFollower->Max_speed_L = 150;
-		LineFollower->Max_speed_R = 150;
-		LineFollower->Sharp_bend_speed_right = -55;
-		LineFollower->Sharp_bend_speed_left = 75;
-		LineFollower->Bend_speed_right = -60;
-		LineFollower->Bend_speed_left = 120;
-		LineFollower->Kp = 0.015;
-		LineFollower->Kd = 0.23;
-	  }
-	  /*EXTREME mode*/
-	  if(RxData == 'm')
-	  {
-		 LineFollower->Base_speed_R = 155;
-		 LineFollower->Base_speed_L = 155;
-		 LineFollower->Max_speed_L = 155;
-		 LineFollower->Max_speed_R = 155;
-		 LineFollower->Sharp_bend_speed_right = -70;
-		 LineFollower->Sharp_bend_speed_left = 85;
-		 LineFollower->Bend_speed_right = -50;
-		 LineFollower->Bend_speed_left = 30;
-		 LineFollower->Kp = 0.015;
-		 LineFollower->Kd = 0.265;
-	  }
 
- 	  /*EXTREME+ mode*/
- 	  if(RxData == 'n')
- 	  {
- 	    LineFollower->Base_speed_R = 160;
- 	    LineFollower->Base_speed_L = 160;
- 	    LineFollower->Max_speed_L = 160;
- 	  	LineFollower->Max_speed_R = 160;
- 	 	LineFollower->Sharp_bend_speed_right = -70;
- 		LineFollower->Sharp_bend_speed_left = 85;
- 		LineFollower->Bend_speed_right = -50;
- 		LineFollower->Bend_speed_left = 30;
- 		LineFollower->Kp = 0.015;
- 		LineFollower->Kd = 0.265;
- 	  }
- 	  /*SPECIAL mode*/
- 	  if(RxData == 'h')
- 	  {
-// 	    LineFollower->Base_speed_R = 135;
-// 	    LineFollower->Base_speed_L = 135;
-// 	    LineFollower->Max_speed_L = 135;
-// 	    LineFollower->Max_speed_R = 135;
-// 	 	LineFollower->Sharp_bend_speed_right = -66;
-// 		LineFollower->Sharp_bend_speed_left = 92;
-// 		LineFollower->Bend_speed_right = -50;
-// 		LineFollower->Bend_speed_left = 30;
-// 		LineFollower->Kp = 0.015;
-// 		LineFollower->Kd = 0.2;
- 			LineFollower->Base_speed_R = 55;
- 			LineFollower->Base_speed_L = 55;
- 			LineFollower->Max_speed_L = 80;
- 			LineFollower->Max_speed_R = 80;
- 			LineFollower->Sharp_bend_speed_right = -70;
- 			LineFollower->Sharp_bend_speed_left = 70;
- 			LineFollower->Bend_speed_right = -50;
- 			LineFollower->Bend_speed_left = 80;
- 			LineFollower->Kp = 0.015;
- 			LineFollower->Kd = 0.07;
+	snprintf(buffer, sizeof(buffer), "Start\r\nBattery = %0.2f V\r\nSpeed_level = %0.2f\r\n",
+			 LF->battery_voltage, LF->Speed_level);
+	UartSend(buffer);
 
- 	  }
- 	  /*RA-1-final-slower*/
- 	  if(RxData == 'o')
- 	  {
- 	    LineFollower->Base_speed_R = 143;
- 	    LineFollower->Base_speed_L = 143;
- 	   	LineFollower->Max_speed_L = 182;
- 	  	LineFollower->Max_speed_R = 182;
- 	  	LineFollower->Sharp_bend_speed_right = -76;
- 		LineFollower->Sharp_bend_speed_left = 90;
- 		LineFollower->Bend_speed_right = -50;
- 		LineFollower->Bend_speed_left = 100;
- 		LineFollower->Kp = 0.02;
- 		LineFollower->Kd = 350;
- 	   }
- 	   /*RA-2-eliminations-faster*/
- 	   if(RxData == 'u')
- 	   {
- 	     LineFollower->Base_speed_R = 153;
- 	     LineFollower->Base_speed_L = 153;
- 	     LineFollower->Max_speed_L = 187;
- 	   	 LineFollower->Max_speed_R = 187;
- 	  	 LineFollower->Sharp_bend_speed_right = -76;
- 	 	 LineFollower->Sharp_bend_speed_left = 90;
- 	 	 LineFollower->Bend_speed_right = -50;
- 	 	 LineFollower->Bend_speed_left = 100;
- 	 	 LineFollower->Kp = 0.02;
- 	 	 LineFollower->Kd = 350;
- 	   }
- 	  /*Gruzik2.1 Robo Comp 2024r 1*/
- 	  if(RxData == 'p')
- 	  {
- 		 LineFollower->Base_speed_R = 143;
- 		 LineFollower->Base_speed_L = 143;
- 		 LineFollower->Max_speed_L = 182;
- 		 LineFollower->Max_speed_R = 182;
- 		 LineFollower->Sharp_bend_speed_right = -76;
- 		 LineFollower->Sharp_bend_speed_left = 90;
- 		 LineFollower->Bend_speed_right = -40;//40
- 		 LineFollower->Bend_speed_left = 110;
- 		 LineFollower->Kp = 0.02;
- 		 LineFollower->Kd = 350;
- 	  }
- 	  /*Gruzik2.1 Robo Comp 2024 2*/
- 	  if(RxData == 'r')
- 	  {
- 		 LineFollower->Base_speed_R = 153;
- 		 LineFollower->Base_speed_L = 153;
- 		 LineFollower->Max_speed_L = 187;
- 		 LineFollower->Max_speed_R = 187;
- 		 LineFollower->Sharp_bend_speed_right = -76;
- 		 LineFollower->Sharp_bend_speed_left = 90;
- 		 LineFollower->Bend_speed_right = -40;//40
- 		 LineFollower->Bend_speed_left = 110;
- 		 LineFollower->Kp = 0.02;
- 		 LineFollower->Kd = 350;
- 	   }
+	HAL_GPIO_WritePin(Motor_STBY_GPIO_Port, Motor_STBY_Pin, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(LED_4_GPIO_Port, LED_4_Pin, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(LED_3_GPIO_Port, LED_3_Pin, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(LED_2_GPIO_Port, LED_2_Pin, GPIO_PIN_SET);
+	LF->LineFollowing = 1u;
+	LF->PowerMode = Start;
+}
+
+static void StartWithState(LineFollower_t *LF, uint8_t state)
+{
+	PrepareStoppedStart(LF);
+	LF->state = state;
+	if(state == Mapping)
+	{
+		UartSend("STARTING,mapping\r\n");
+	}
+	else if(state == UnMapping)
+	{
+		UartSend("STARTING,playback\r\n");
+	}
+	else
+	{
+		UartSend("STARTING,normal\r\n");
+	}
+	StartRobot(LF);
+}
+
+static void SetState(LineFollower_t *LF, uint8_t state)
+{
+	if(LF->PowerMode == Start)
+	{
+		UartSend("Stop robot before changing state\r\n");
+		return;
+	}
+
+	LF->state = state;
+	if(state == Mapping)
+	{
+		UartSend("State: Mapping\r\n");
+	}
+	else if(state == UnMapping)
+	{
+		UartSend("State: UnMapping\r\n");
+	}
+	else
+	{
+		UartSend("State: PID\r\n");
+	}
+}
+
+static void SetDrivePreset(LineFollower_t *LF,
+						   int base,
+						   int max,
+						   int sharp_right,
+						   int sharp_left,
+						   int bend_right,
+						   int bend_left,
+						   float kp,
+						   float kd)
+{
+	LF->Base_speed_R = base;
+	LF->Base_speed_L = base;
+	LF->Max_speed_R = max;
+	LF->Max_speed_L = max;
+	LF->Sharp_bend_speed_right = sharp_right;
+	LF->Sharp_bend_speed_left = sharp_left;
+	LF->Bend_speed_right = bend_right;
+	LF->Bend_speed_left = bend_left;
+	LF->Kp = kp;
+	LF->Kd = kd;
+	RobotSettings_RequestSave();
+}
+
+void App_Controll(char RxData, LineFollower_t *LineFollower)
+{
+	if(RxData == 'N')
+	{
+		StopRobot(LineFollower);
+	}
+	else if((RxData == 'Y') || (RxData == 'C'))
+	{
+		if(LineFollower->PowerMode != Start)
+		{
+			StartRobot(LineFollower);
+		}
+		else
+		{
+			UartSend("Already started\r\n");
+		}
+	}
+	else if(RxData == 'P')
+	{
+		SetState(LineFollower, PidFollowing);
+	}
+	else if(RxData == 'M')
+	{
+		SetState(LineFollower, Mapping);
+	}
+	else if(RxData == 'U')
+	{
+		SetState(LineFollower, UnMapping);
+	}
+	else if(RxData == 'a')
+	{
+		SetDrivePreset(LineFollower, 85, 165, -40, 90, -50, 80, 0.015f, 0.085f);
+	}
+	else if(RxData == 'd')
+	{
+		SetDrivePreset(LineFollower, 95, 150, -30, 100, -40, 80, 0.015f, 0.08f);
+	}
+	else if(RxData == 'b')
+	{
+		SetDrivePreset(LineFollower, 102, 145, -30, 100, -40, 80, 0.015f, 0.08f);
+	}
+	else if(RxData == 'e')
+	{
+		SetDrivePreset(LineFollower, 105, 152, -30, 90, -40, 80, 0.015f, 0.08f);
+	}
+	else if(RxData == 'c')
+	{
+		SetDrivePreset(LineFollower, 100, 165, -20, 110, -40, 80, 0.015f, 0.08f);
+	}
+	else if(RxData == 'f')
+	{
+		SetDrivePreset(LineFollower, 115, 175, -20, 110, -40, 80, 0.015f, 0.08f);
+	}
+	else if(RxData == 'i')
+	{
+		SetDrivePreset(LineFollower, 135, 135, -60, 70, -60, 110, 0.015f, 0.2f);
+	}
+	else if(RxData == 'j')
+	{
+		SetDrivePreset(LineFollower, 140, 140, -60, 70, -60, 110, 0.015f, 0.2f);
+	}
+	else if(RxData == 'k')
+	{
+		SetDrivePreset(LineFollower, 145, 145, -60, 70, -60, 110, 0.015f, 0.22f);
+	}
+	else if(RxData == 'l')
+	{
+		SetDrivePreset(LineFollower, 150, 150, -55, 75, -60, 120, 0.015f, 0.23f);
+	}
+	else if(RxData == 'm')
+	{
+		SetDrivePreset(LineFollower, 155, 155, -70, 85, -50, 30, 0.015f, 0.265f);
+	}
+	else if(RxData == 'n')
+	{
+		SetDrivePreset(LineFollower, 160, 160, -70, 85, -50, 30, 0.015f, 0.265f);
+	}
+	else if(RxData == 'h')
+	{
+		SetDrivePreset(LineFollower, 55, 80, -70, 70, -50, 80, 0.015f, 0.07f);
+	}
+	else if(RxData == 'o')
+	{
+		SetDrivePreset(LineFollower, 143, 182, -76, 90, -50, 100, 0.02f, 350.0f);
+	}
+	else if(RxData == 'u')
+	{
+		SetDrivePreset(LineFollower, 153, 187, -76, 90, -50, 100, 0.02f, 350.0f);
+	}
+	else if(RxData == 'p')
+	{
+		SetDrivePreset(LineFollower, 143, 182, -76, 90, -40, 110, 0.02f, 350.0f);
+	}
+	else if(RxData == 'r')
+	{
+		SetDrivePreset(LineFollower, 153, 187, -76, 90, -40, 110, 0.02f, 350.0f);
+	}
 }
 
 static void Mode_change(LineFollower_t *LF)
 {
-	char *ParsePointer = strtok(NULL, ",");
-
-	if(strlen(ParsePointer) > 0 && strlen(ParsePointer) < 2)
+	char *parse_pointer = NextValue();
+	if((parse_pointer != NULL) && (strlen(parse_pointer) > 0u))
 	{
-		App_Controll(ParsePointer[0], LF);
+		App_Controll(parse_pointer[0], LF);
 	}
 }
+
+static void State_change(LineFollower_t *LF)
+{
+	char *parse_pointer = NextValue();
+	if(parse_pointer == NULL)
+	{
+		return;
+	}
+
+	if((!strcmp(parse_pointer, "PID")) || (!strcmp(parse_pointer, "Pid")) || (!strcmp(parse_pointer, "P")))
+	{
+		SetState(LF, PidFollowing);
+	}
+	else if((!strcmp(parse_pointer, "Mapping")) || (!strcmp(parse_pointer, "M")))
+	{
+		SetState(LF, Mapping);
+	}
+	else if((!strcmp(parse_pointer, "UnMapping")) || (!strcmp(parse_pointer, "U")))
+	{
+		SetState(LF, UnMapping);
+	}
+}
+
+static void Start_command(LineFollower_t *LF, uint8_t state)
+{
+	(void)NextValue();
+	StartWithState(LF, state);
+}
+
+static void Telemetry_change(void)
+{
+	char *parse_pointer = NextValue();
+	if(parse_pointer == NULL)
+	{
+		return;
+	}
+
+	if((!strcmp(parse_pointer, "odom")) || (!strcmp(parse_pointer, "ODOM")) || (!strcmp(parse_pointer, "1")))
+	{
+		TelemetryMode = TELEMETRY_ODOM;
+		UartSend("TELEMETRY,odom\r\n");
+	}
+	else if((!strcmp(parse_pointer, "debug")) || (!strcmp(parse_pointer, "DEBUG")) || (!strcmp(parse_pointer, "2")))
+	{
+		TelemetryMode = TELEMETRY_DEBUG;
+		UartSend("TELEMETRY,debug\r\n");
+	}
+	else
+	{
+		TelemetryMode = TELEMETRY_OFF;
+		UartSend("TELEMETRY,off\r\n");
+	}
+}
+
+static void Manual_drive_change(LineFollower_t *LF)
+{
+	float left_speed = 0.0f;
+	float right_speed = 0.0f;
+	if(!ParseFloatValue(&left_speed))
+	{
+		return;
+	}
+	if(!ParseFloatValue(&right_speed))
+	{
+		right_speed = left_speed;
+	}
+
+	if((fabsf(left_speed) < 0.5f) && (fabsf(right_speed) < 0.5f))
+	{
+		ManualDriveActive = 0u;
+		motor_control(0.0, 0.0);
+		HAL_GPIO_WritePin(Motor_STBY_GPIO_Port, Motor_STBY_Pin, GPIO_PIN_RESET);
+		return;
+	}
+
+	if(LF->PowerMode == Start)
+	{
+		UartSend("MANUAL_ERROR,robot_running\r\n");
+		return;
+	}
+
+	if(SdFileOpen != 0u)
+	{
+		f_close(&SdCardFile);
+		SdFileOpen = 0u;
+	}
+
+	TireCleaningActive = 0u;
+	ManualDriveActive = 1u;
+	ManualDriveLastTick = HAL_GetTick();
+	LF->LineFollowing = 0u;
+	LF->PowerMode = Stop;
+	map.Mapping = 0u;
+	map.PlaybackActive = 0u;
+	TelemetryMode = TELEMETRY_OFF;
+
+	left_speed = ClampFloat(left_speed, -250.0f, 250.0f);
+	right_speed = ClampFloat(right_speed, -250.0f, 250.0f);
+	HAL_GPIO_WritePin(Motor_STBY_GPIO_Port, Motor_STBY_Pin, GPIO_PIN_SET);
+	motor_control(right_speed, left_speed);
+}
+
+static void Tire_clean_change(LineFollower_t *LF)
+{
+	float enabled = 0.0f;
+	if(!ParseFloatValue(&enabled))
+	{
+		return;
+	}
+
+	if(enabled > 0.0f)
+	{
+		if(LF->PowerMode == Start)
+		{
+			UartSend("CLEAN_ERROR,robot_running\r\n");
+			return;
+		}
+
+		if(SdFileOpen != 0u)
+		{
+			f_close(&SdCardFile);
+			SdFileOpen = 0u;
+		}
+
+		LF->LineFollowing = 0u;
+		LF->PowerMode = Stop;
+		map.Mapping = 0u;
+		map.PlaybackActive = 0u;
+		TelemetryMode = TELEMETRY_OFF;
+		ManualDriveActive = 0u;
+		TireCleaningActive = 1u;
+		HAL_GPIO_WritePin(Motor_STBY_GPIO_Port, Motor_STBY_Pin, GPIO_PIN_SET);
+		motor_control(TireCleanSpeed, TireCleanSpeed);
+		UartSend("CLEAN,start\r\n");
+	}
+	else
+	{
+		TireCleaningActive = 0u;
+		motor_control(0.0, 0.0);
+		HAL_GPIO_WritePin(Motor_STBY_GPIO_Port, Motor_STBY_Pin, GPIO_PIN_RESET);
+		UartSend("CLEAN,stop\r\n");
+	}
+}
+
+void Parser_ServiceManualDriveTimeout(LineFollower_t *LF)
+{
+	if((ManualDriveActive != 0u) && ((HAL_GetTick() - ManualDriveLastTick) > ROBOT_MANUAL_TIMEOUT_MS))
+	{
+		ManualDriveActive = 0u;
+		motor_control(0.0, 0.0);
+		HAL_GPIO_WritePin(Motor_STBY_GPIO_Port, Motor_STBY_Pin, GPIO_PIN_RESET);
+	}
+	(void)LF;
+}
+
+void Parser_FinishMappingAutoClosed(LineFollower_t *LF)
+{
+	LF->LineFollowing = 0u;
+	LF->PowerMode = Stop;
+	map.Mapping = 0u;
+	map.PlaybackActive = 0u;
+	TireCleaningActive = 0u;
+	ManualDriveActive = 0u;
+
+	motor_control(0.0, 0.0);
+	HAL_GPIO_WritePin(Motor_STBY_GPIO_Port, Motor_STBY_Pin, GPIO_PIN_RESET);
+
+	if(SdFileOpen != 0u)
+	{
+		f_close(&SdCardFile);
+		SdFileOpen = 0u;
+	}
+
+	UartSend("MAP_AUTO_CLOSED,start_radius_3cm\r\n");
+}
+
+static const char *MapFileFromKind(const char *kind, const char **normalized_kind)
+{
+	if((kind != NULL) &&
+	   ((!strcmp(kind, "optimized")) || (!strcmp(kind, "map")) || (!strcmp(kind, "map.txt"))))
+	{
+		*normalized_kind = "optimized";
+		return ROBOT_MAP_INPUT_FILE;
+	}
+
+	*normalized_kind = "recorded";
+	return ROBOT_MAP_OUTPUT_FILE;
+}
+
+static uint8_t ReadTransferLine(char *line, size_t line_size)
+{
+	UINT len = 0u;
+	uint8_t i = 0u;
+	uint8_t sample = 0u;
+
+	while(i < (uint8_t)(line_size - 1u))
+	{
+		if((f_read(&SdCardFile, &sample, 1, &len) != FR_OK) || (len == 0u))
+		{
+			break;
+		}
+
+		if(sample == '\r')
+		{
+			continue;
+		}
+
+		if(sample == '\n')
+		{
+			break;
+		}
+
+		line[i++] = (char)sample;
+	}
+
+	line[i] = '\0';
+	return ((i > 0u) || (len != 0u)) ? 1u : 0u;
+}
+
+static void SendMapDump(LineFollower_t *LF)
+{
+	if(LF->PowerMode == Start)
+	{
+		UartSend("MAP_ERROR,stop_robot_first\r\n");
+		return;
+	}
+
+	char *requested_kind = NextValue();
+	const char *dump_kind = "recorded";
+	const char *file_name = MapFileFromKind(requested_kind, &dump_kind);
+
+	if(SdFileOpen != 0u)
+	{
+		f_close(&SdCardFile);
+		SdFileOpen = 0u;
+	}
+
+	if(SdOpenFile("MAP_ERROR", "open_read", file_name, FA_READ) == 0u)
+	{
+		return;
+	}
+
+	char tx[160];
+	char line[112];
+	uint16_t count = 0u;
+	snprintf(tx, sizeof(tx), "MAP_BEGIN,%s\r\n", dump_kind);
+	UartSend(tx);
+
+	while(ReadTransferLine(line, sizeof(line)) != 0u)
+	{
+		snprintf(tx, sizeof(tx), "MAP,%s\r\n", line);
+		UartSend(tx);
+		count++;
+		HAL_Delay(2);
+	}
+
+	f_close(&SdCardFile);
+	snprintf(tx, sizeof(tx), "MAP_END,%u\r\n", count);
+	UartSend(tx);
+}
+
+static void MapUploadBegin(LineFollower_t *LF)
+{
+	if(LF->PowerMode == Start)
+	{
+		UartSend("UPLOAD_ERROR,stop_robot_first\r\n");
+		return;
+	}
+
+	float expected_count = 0.0f;
+	(void)ParseFloatValue(&expected_count);
+
+	if(SdFileOpen != 0u)
+	{
+		f_close(&SdCardFile);
+		SdFileOpen = 0u;
+	}
+
+	if(SdOpenFile("UPLOAD_ERROR", "open_write", ROBOT_MAP_INPUT_FILE, FA_WRITE | FA_CREATE_ALWAYS) == 0u)
+	{
+		return;
+	}
+
+	SdFileOpen = 1u;
+	MapUploadPointCount = 0u;
+	MapUploadExpectedCount = (uint16_t)expected_count;
+
+	char tx[80];
+	snprintf(tx, sizeof(tx), "UPLOAD_READY,%u\r\n", MapUploadExpectedCount);
+	UartSend(tx);
+}
+
+static void MapUploadPoint(void)
+{
+	if(SdFileOpen == 0u)
+	{
+		UartSend("UPLOAD_ERROR,no_file\r\n");
+		return;
+	}
+
+	float x = 0.0f;
+	float y = 0.0f;
+	float speed = map.DefaultPlaybackSpeed;
+	if((!ParseFloatValue(&x)) || (!ParseFloatValue(&y)))
+	{
+		UartSend("UPLOAD_ERROR,bad_point\r\n");
+		return;
+	}
+	(void)ParseFloatValue(&speed);
+
+	char line[64];
+	snprintf(line, sizeof(line), "%0.3f\t%0.3f\t%0.3f\n", x, y, speed);
+	f_puts((TCHAR *)line, &SdCardFile);
+	MapUploadPointCount++;
+
+	if((MapUploadPointCount % 50u) == 0u)
+	{
+		char tx[80];
+		snprintf(tx, sizeof(tx), "UPLOAD_PROGRESS,%u,%u\r\n", MapUploadPointCount, MapUploadExpectedCount);
+		UartSend(tx);
+	}
+}
+
+static void MapUploadEnd(void)
+{
+	if(SdFileOpen != 0u)
+	{
+		f_close(&SdCardFile);
+		SdFileOpen = 0u;
+	}
+
+	char tx[80];
+	snprintf(tx, sizeof(tx), "UPLOAD_DONE,%u,%u\r\n", MapUploadPointCount, MapUploadExpectedCount);
+	UartSend(tx);
+}
+
+static void SaveSettingsCommand(LineFollower_t *LF)
+{
+	char tx[64];
+
+	if(LF->PowerMode == Start)
+	{
+		RobotSettings_RequestSave();
+		UartSend("SETTINGS_SAVE,pending_until_stop\r\n");
+		return;
+	}
+
+	RobotSettingsStatus_t status = RobotSettings_Save(LF, &map);
+	snprintf(tx, sizeof(tx), "SETTINGS_SAVE,%s\r\n", SettingsStatusText(status));
+	UartSend(tx);
+}
+
+static void LoadSettingsCommand(LineFollower_t *LF)
+{
+	char tx[64];
+
+	if(LF->PowerMode == Start)
+	{
+		UartSend("SETTINGS_LOAD,stop_robot_first\r\n");
+		return;
+	}
+
+	RobotSettingsStatus_t status = RobotSettings_Load(LF, &map);
+	snprintf(tx, sizeof(tx), "SETTINGS_LOAD,%s\r\n", SettingsStatusText(status));
+	UartSend(tx);
+}
+
 void Parser_Parse(uint8_t *ReceivedData, LineFollower_t *LineFollower)
 {
-	char *ParsePointer = strtok((char*)ReceivedData, "=");
+	char *parse_pointer = strtok((char*)ReceivedData, "=");
+	if(parse_pointer == NULL)
+	{
+		return;
+	}
 
-	if(!strcmp("Kp",ParsePointer))
+	if(!strcmp("Kp", parse_pointer))
 	{
 		kp_change(LineFollower);
 	}
-	else if(!strcmp("Kd",ParsePointer))
+	else if(!strcmp("Kd", parse_pointer))
 	{
 		kd_change(LineFollower);
 	}
-	else if(!strcmp("Base_speed",ParsePointer))
+	else if(!strcmp("Base_speed", parse_pointer))
 	{
 		Base_speed_change(LineFollower);
 	}
-	else if(!strcmp("Max_speed",ParsePointer))
+	else if(!strcmp("Max_speed", parse_pointer))
 	{
 		Max_speed_change(LineFollower);
 	}
-	else if(!strcmp("Sharp_bend_speed_right",ParsePointer))
+	else if(!strcmp("Sharp_bend_speed_right", parse_pointer))
 	{
 		Sharp_bend_speed_right_change(LineFollower);
 	}
-	else if(!strcmp("Sharp_bend_speed_left",ParsePointer))
+	else if(!strcmp("Sharp_bend_speed_left", parse_pointer))
 	{
 		Sharp_bend_speed_left_change(LineFollower);
 	}
-	else if(!strcmp("Bend_speed_right",ParsePointer))
+	else if(!strcmp("Bend_speed_right", parse_pointer))
 	{
 		Bend_speed_right_change(LineFollower);
 	}
-	else if(!strcmp("Bend_speed_left",ParsePointer))
+	else if(!strcmp("Bend_speed_left", parse_pointer))
 	{
 		Bend_speed_left_change(LineFollower);
 	}
-	else if(!strcmp("Treshold",ParsePointer))
-	{
-		//MappingMode_change(LineFollower);
-	}
-	else if(!strcmp("Mode",ParsePointer))
+	else if(!strcmp("Mode", parse_pointer))
 	{
 		Mode_change(LineFollower);
+	}
+	else if(!strcmp("State", parse_pointer))
+	{
+		State_change(LineFollower);
+	}
+	else if(!strcmp("StartNormal", parse_pointer))
+	{
+		Start_command(LineFollower, PidFollowing);
+	}
+	else if(!strcmp("StartMapping", parse_pointer))
+	{
+		Start_command(LineFollower, Mapping);
+	}
+	else if(!strcmp("StartPlayback", parse_pointer))
+	{
+		Start_command(LineFollower, UnMapping);
+	}
+	else if(!strcmp("MapP", parse_pointer))
+	{
+		Map_p_change();
+	}
+	else if(!strcmp("Treshold", parse_pointer))
+	{
+		Sensor_treshold_change(LineFollower);
+	}
+	else if(!strcmp("MapI", parse_pointer))
+	{
+		Map_i_change();
+	}
+	else if(!strcmp("MapD", parse_pointer))
+	{
+		Map_d_change();
+	}
+	else if(!strcmp("MapSpeed", parse_pointer))
+	{
+		Map_speed_change();
+	}
+	else if((!strcmp("CleanSpeed", parse_pointer)) || (!strcmp("TireCleanSpeed", parse_pointer)))
+	{
+		Tire_clean_speed_change();
+	}
+	else if((!strcmp("Clean", parse_pointer)) || (!strcmp("TireClean", parse_pointer)))
+	{
+		Tire_clean_change(LineFollower);
+	}
+	else if((!strcmp("Manual", parse_pointer)) || (!strcmp("Joystick", parse_pointer)))
+	{
+		Manual_drive_change(LineFollower);
+	}
+	else if(!strcmp("Telemetry", parse_pointer))
+	{
+		Telemetry_change();
+	}
+	else if(!strcmp("Debug", parse_pointer))
+	{
+		TelemetryMode = TELEMETRY_DEBUG;
+		UartSend("TELEMETRY,debug\r\n");
+	}
+	else if(!strcmp("MapDump", parse_pointer))
+	{
+		SendMapDump(LineFollower);
+	}
+	else if(!strcmp("MapUploadBegin", parse_pointer))
+	{
+		MapUploadBegin(LineFollower);
+	}
+	else if(!strcmp("MapPoint", parse_pointer))
+	{
+		MapUploadPoint();
+	}
+	else if(!strcmp("MapUploadEnd", parse_pointer))
+	{
+		MapUploadEnd();
+	}
+	else if((!strcmp("SaveSettings", parse_pointer)) || (!strcmp("SettingsSave", parse_pointer)))
+	{
+		SaveSettingsCommand(LineFollower);
+	}
+	else if((!strcmp("LoadSettings", parse_pointer)) || (!strcmp("SettingsLoad", parse_pointer)))
+	{
+		LoadSettingsCommand(LineFollower);
 	}
 }

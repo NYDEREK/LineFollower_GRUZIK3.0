@@ -1,0 +1,72 @@
+/*
+ * robot_config.h
+ *
+ * Hardware constants for the renewed GRUZIK3.0 platform.
+ */
+
+#ifndef INC_ROBOT_CONFIG_H_
+#define INC_ROBOT_CONFIG_H_
+
+#define ROBOT_WHEEL_BASE_M                 0.170f
+#define ROBOT_SENSOR_OFFSET_M              0.195f
+#define ROBOT_WHEEL_DIAMETER_M             0.024f
+#define ROBOT_WHEEL_CIRCUMFERENCE_M        0.07539822f
+
+#define ROBOT_MOTOR_GEAR_TEETH             1.0f
+#define ROBOT_WHEEL_GEAR_TEETH             10.0f
+#define ROBOT_GEAR_RATIO                   (ROBOT_WHEEL_GEAR_TEETH / ROBOT_MOTOR_GEAR_TEETH)
+
+#define ROBOT_ENCODER_STEPS_PER_MOTOR_REV  2000.0f
+#define ROBOT_ENCODER_COUNTS_PER_WHEEL_REV (ROBOT_ENCODER_STEPS_PER_MOTOR_REV * ROBOT_GEAR_RATIO)
+#define ROBOT_ENCODER_COUNTER_CENTER       20000u
+
+#define ROBOT_CONTROL_DT_S                  0.001f
+#define ROBOT_PWM_TIMER_SCALE               4.0f
+#define ROBOT_PWM_MAX                       286.0f
+
+#define ROBOT_LEFT_ENCODER_DIRECTION        -1
+#define ROBOT_RIGHT_ENCODER_DIRECTION       -1
+#define ROBOT_IMU_Z_DIRECTION               1.0f
+#define ROBOT_ENCODER_YAW_DIRECTION         1.0f
+#define ROBOT_ODOMETRY_GYRO_WEIGHT          0.96f
+#define ROBOT_GYRO_STATIONARY_DPS           2.0f
+#define ROBOT_ENCODER_STATIONARY_M          0.00002f
+#define ROBOT_GYRO_BIAS_LEARN_RATE          0.0005f
+
+#define ROBOT_MAP_RECORD_EVERY_TICKS        40u
+#define ROBOT_MAP_TARGET_RADIUS_M           0.055f
+#define ROBOT_MAP_ADVANCE_LATERAL_M         0.120f
+#define ROBOT_MAP_CLOSE_RADIUS_M            0.030f
+#define ROBOT_MAP_CLOSE_MIN_DISTANCE_M      0.450f
+#define ROBOT_MAP_CLOSE_MIN_POINTS          8u
+#define ROBOT_PLAYBACK_LOOKAHEAD_BASE_M     0.120f
+#define ROBOT_PLAYBACK_LOOKAHEAD_SPEED_M    0.140f
+#define ROBOT_PLAYBACK_CROSSTRACK_LIMIT_M   0.180f
+#define ROBOT_PLAYBACK_LINE_WEIGHT          0.20f
+#define ROBOT_PLAYBACK_LINE_CORR_LIMIT_PWM  35.0f
+#define ROBOT_PLAYBACK_ODOM_CORR_LIMIT_PWM  115.0f
+#define ROBOT_PLAYBACK_CORR_LIMIT_PWM       140.0f
+#define ROBOT_PLAYBACK_LOST_LINE_SPEED_MUL  0.85f
+#define ROBOT_PLAYBACK_D_FILTER_ALPHA       0.28f
+#define ROBOT_PLAYBACK_TURN_SPEED_REDUCTION 0.35f
+#define ROBOT_MAP_OUTPUT_FILE               "GRUZIK.txt"
+#define ROBOT_MAP_INPUT_FILE                "map.txt"
+
+#define ROBOT_TELEMETRY_PERIOD_MS           100u
+#define ROBOT_MANUAL_TIMEOUT_MS             350u
+#define ROBOT_LINE_CONTROL_PERIOD_MS        5u
+
+#define ROBOT_LINE_SENSOR_CHARGE_US         10u
+#define ROBOT_LINE_SENSOR_DEFAULT_THRESHOLD_US 4500u
+#define ROBOT_LINE_SENSOR_MIN_THRESHOLD_US  50u
+#define ROBOT_LINE_SENSOR_MAX_THRESHOLD_US  10000u
+#define ROBOT_LINE_SENSOR_ACTIVE_HIGH       1u
+
+#ifndef M_PI
+#define M_PI 3.14159265358979323846f
+#endif
+
+#define DEG_TO_RAD                          0.017453292519943295f
+#define RAD_TO_DEG                          57.29577951308232f
+
+#endif /* INC_ROBOT_CONFIG_H_ */

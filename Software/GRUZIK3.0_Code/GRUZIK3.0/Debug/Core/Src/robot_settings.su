@@ -1,0 +1,13 @@
+../Core/Src/robot_settings.c:51:17:SettingsFlashAddress	16	static
+../Core/Src/robot_settings.c:63:16:SettingsFlashDualBank	4	static
+../Core/Src/robot_settings.c:72:17:SettingsFlashBank	16	static
+../Core/Src/robot_settings.c:84:17:SettingsFlashPage	24	static
+../Core/Src/robot_settings.c:97:17:SettingsChecksum	24	static
+../Core/Src/robot_settings.c:110:13:SettingsFillRecord	24	static
+../Core/Src/robot_settings.c:135:30:SettingsValidateRecord	24	static
+../Core/Src/robot_settings.c:157:13:SettingsApplyRecord	24	static
+../Core/Src/robot_settings.c:177:23:RobotSettings_Load	24	static
+../Core/Src/robot_settings.c:191:23:RobotSettings_Save	152	static
+../Core/Src/robot_settings.c:245:6:RobotSettings_RequestSave	8	static
+../Core/Src/robot_settings.c:251:6:RobotSettings_Service	16	static
+../Core/Src/robot_settings.c:269:23:RobotSettings_LastStatus	4	static

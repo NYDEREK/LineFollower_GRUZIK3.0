@@ -1,3 +1,4 @@
-../Core/Src/motor.c:11:6:Motor_CalculateSpeed	3
-../Core/Src/motor.c:55:6:Motor_Init	1
-../Core/Src/motor.c:62:6:PI_Loop	4
+../Core/Src/motor.c:13:6:Motor_CalculateSpeed	3
+../Core/Src/motor.c:53:6:Motor_Init	1
+../Core/Src/motor.c:62:6:Motor_SetEncoderDirection	2
+../Core/Src/motor.c:67:6:PI_Loop	4

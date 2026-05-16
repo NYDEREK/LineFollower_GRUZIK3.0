@@ -9,18 +9,21 @@
 
 #include "main.h"
 #include "LowPassFilter.h"
+#include "robot_config.h"
 
 #define RPM_TO_MH 0.20833333333f
-#define IMPULSES_PER_ROTATION 2000.0f
-#define GEAR_RATIO 10.0f
-#define MEASUREMENT_PERIOD 0.001f // 0.001s 1KHZ
-#define WHEEL_CIRCUMFERENCE 0.0706858347f//0.0706858347f //0.08f
+#define IMPULSES_PER_ROTATION ROBOT_ENCODER_STEPS_PER_MOTOR_REV
+#define GEAR_RATIO ROBOT_GEAR_RATIO
+#define MEASUREMENT_PERIOD ROBOT_CONTROL_DT_S
+#define WHEEL_CIRCUMFERENCE ROBOT_WHEEL_CIRCUMFERENCE_M
 
 
 typedef struct
 {
 	/*Encoder and speed*/
 	uint32_t EncoderValue;
+	int32_t EncoderDeltaCounts;
+	int8_t EncoderDirection;
 	uint32_t EncoderPreviousValue;  //was on uint16_t
 	float RPM;
 	float PreviousRPM;
@@ -57,6 +60,7 @@ typedef struct
 
 /*functions*/
 void Motor_Init(motor_t *motor, float Kp, float Ki);
+void Motor_SetEncoderDirection(motor_t *motor, int8_t direction);
 void Motor_CalculateSpeed(motor_t *motor);
 void PI_Loop(motor_t *motor);
 

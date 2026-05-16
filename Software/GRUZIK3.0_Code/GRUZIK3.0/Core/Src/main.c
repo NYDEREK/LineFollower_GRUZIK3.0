@@ -1,4 +1,4 @@
-/* USER CODE BEGIN Header */
+﻿/* USER CODE BEGIN Header */
 /**
   ******************************************************************************
   * @file           : main.c
@@ -39,6 +39,10 @@
 #include "LowPassFilter.h"
 #include "TJ_MPU6050.h"
 #include "map.h"
+#include "odometry.h"
+#include "robot_config.h"
+#include "robot_settings.h"
+#include <math.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -72,20 +76,21 @@
 	/*MAP*/
 	#define CURVATURE_COMPENSATION 0
 	Map_t map;
+	Odometry_t RobotOdom;
 	/*FatFS variables*/
 	FRESULT FatFsResult;
 	FATFS SdFatFs;
 	FIL SdCardFile;
 
 	/*IMU*/
-	#define YAW_MEASUREMENT_PERIOD 0.001f//s
 	RawData_Def myAccelRaw, myGyroRaw;
 	ScaledData_Def myAccelScaled, myGyroScaled;
 	MPU_ConfigTypeDef myMpuConfig;
 
 	float Yaw;
-	float Orientation;
-
+	static float GyroZBiasDps = 0.0f;
+	static float GyroZRawDps = 0.0f;
+	static float GyroZCorrectedDps = 0.0f;
 	/*Encoders*/
 	#define PI_MOTOR_SPEED_REGULATION 1
 	#define LOW_PASS_FILTER_ALPHA 0.7
@@ -97,7 +102,7 @@
 	uint16_t timer_counter_R;
 
 	/*Rest of PIDR regulator*/
-	int Sensors_read = 0x000000000000;
+	uint64_t Sensors_read = 0x000000000000ULL;
 	int Position;
 	float Ki = 0;
 	float Kr = 0;
@@ -117,8 +122,9 @@
     uint8_t buffer_2[60];
     uint8_t RxData;
 	RingBuffer_t RB, ReceiveBuffer;
-	uint8_t ReceivedData[32];
-	uint8_t ReceivedLines;
+    uint8_t ReceivedData[PARSER_LINE_BUFFER_SIZE];
+	volatile uint8_t ReceivedLines;
+	volatile uint8_t MappingAutoClosePending;
 
 /* USER CODE END PV */
 
@@ -132,9 +138,19 @@ void forward_brake(int pos_right, int pos_left);
 int QTR8_read();
 void sharp_turn();
 void motor_control (double pos_right, double pos_left);
-void Set_Pin_Input (GPIO_TypeDef *GPIOx, uint16_t GPIO_Pin);
-void Set_Pin_Output (GPIO_TypeDef *GPIOx, uint16_t GPIO_Pin);
-void delay_us (uint16_t us);
+static void Robot_StopOutputs(void);
+static void Robot_ServiceTelemetry(void);
+static void Robot_ServiceControl(void);
+static void Robot_SendOdomTelemetry(void);
+static void Robot_SendDebugTelemetry(void);
+static void Robot_UpdateSpeedStats(void);
+static float ClampMotorCommand(float speed);
+static uint32_t LineSensorThresholdUs(void);
+static void LineSensorDelayUs(uint32_t delay_us);
+static void LineSensorSetInput(void);
+static void LineSensorSetOutputHigh(void);
+static uint8_t LineSensorIsActive(GPIO_PinState state);
+void Robot_ResetOdometry(void);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -188,24 +204,20 @@ int main(void)
   	HAL_ADC_Start_DMA(&hadc1, (uint32_t*)&GRUZIK.Adc_Value, 1);
 
   	/*Initial values for driving on Optimized route*/
-  	map.p = 0.11;//0.11
+  	map.p = 90.0f;
   	map.i = 0;
-  	map.d = 11;//11
+  	map.d = 10.0f;
 
   	GRUZIK.state = PidFollowing;
+  	GRUZIK.PowerMode = Stop;
+  	GRUZIK.LineFollowing = 0u;
 
 
   	/*Set initial values for PID*/
     GRUZIK.Kp = 0.015;
   	GRUZIK.Kd = 0.085;
   	GRUZIK.Speed_offset = 0.014;
-
-  	if(GRUZIK.state == UnMapping)
-  	{
-		GRUZIK.Kp = map.p;
-		GRUZIK.Kd = map.d;
-		//GRUZIK.Base_speed_R = map.i;
-  	}
+  	GRUZIK.treshold = ROBOT_LINE_SENSOR_DEFAULT_THRESHOLD_US;
 
   	GRUZIK.Base_speed_R = 80;
   	GRUZIK.Base_speed_L = 80;
@@ -219,48 +231,33 @@ int main(void)
   	GRUZIK.Bend_speed_left= 100;
 
   	map.Kk = 0;
+  	map.DefaultPlaybackSpeed = 80.0f;
+  	Map_Reset(&map);
+  	(void)RobotSettings_Load(&GRUZIK, &map);
+  	Odometry_Init(&RobotOdom, ROBOT_ODOMETRY_GYRO_WEIGHT);
+  	Robot_ResetOdometry();
 
 
     /*Start receiving data from Blue tooth*/
     HAL_UART_Receive_IT(&hlpuart1, &RxData, 1);
 
     /*encoders*/
-    HAL_TIM_Base_Start_IT(&htim5);// 100
     HAL_TIM_Encoder_Start(&htim4, TIM_CHANNEL_ALL); // Left Encoder
     HAL_TIM_Encoder_Start(&htim1, TIM_CHANNEL_ALL); // Right Encoder
 
     //         Motor     KP    KI
     Motor_Init(&Motor_R, 0.1, 0.2);//0.1 0.2
     Motor_Init(&Motor_L, 0.1, 0.2);
+    Motor_SetEncoderDirection(&Motor_L, ROBOT_LEFT_ENCODER_DIRECTION);
+    Motor_SetEncoderDirection(&Motor_R, ROBOT_RIGHT_ENCODER_DIRECTION);
     LowPassFilter_Init(&Motor_R.EncoderRpmFilter, LOW_PASS_FILTER_ALPHA);
     LowPassFilter_Init(&Motor_L.EncoderRpmFilter, LOW_PASS_FILTER_ALPHA);
     LowPassFilter_Init(&Motor_L.MetersPerSecondLPF, LOW_PASS_FILTER_ALPHA);
     LowPassFilter_Init(&Motor_R.MetersPerSecondLPF, LOW_PASS_FILTER_ALPHA);
 
-    /*SD Card file initialization*/
+    /*SD Card mount check. Files are opened by parser commands when needed. */
     FatFsResult = f_mount(&SdFatFs, "", 1);
-    if(GRUZIK.state == Mappig)
-    {
-    	while(!SDReadingReady)
-    	{
-    		FatFsResult = f_open(&SdCardFile, "GRUZIK.txt", FA_WRITE|FA_OPEN_APPEND);
-    		if(FatFsResult == FR_OK)
-    		{
-    			SDReadingReady = 1;
-    		}
-    	}
-    }
-    else if(GRUZIK.state != PidFollowing)
-    {
-    	while(!SDReadingReady)
-    	{
-    		FatFsResult = f_open(&SdCardFile, "map.txt", FA_READ);
-    		if(FatFsResult == FR_OK)
-    		{
-    			SDReadingReady = 1;
-    		}
-    	}
-    }
+    SDReadingReady = (FatFsResult == FR_OK) ? 1u : 0u;
 	/*Start timers and PWM on channels*/
 	HAL_TIM_Base_Start_IT(&htim3);
 	HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);//right pwm
@@ -277,6 +274,9 @@ int main(void)
 	myMpuConfig.Gyro_Full_Scale = FS_SEL_2000;
 	myMpuConfig.Sleep_Mode_Bit = 0;  //1: sleep mode, 0: normal mode
 	MPU6050_Config(&myMpuConfig);
+	htim4.Instance->CNT = ROBOT_ENCODER_COUNTER_CENTER;
+	htim1.Instance->CNT = ROBOT_ENCODER_COUNTER_CENTER;
+	HAL_TIM_Base_Start_IT(&htim5);
 
     /*LED diodes initial set*/
     HAL_GPIO_WritePin(LED_4_GPIO_Port, LED_4_Pin, GPIO_PIN_SET);
@@ -293,10 +293,22 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-	  if(GRUZIK.state != UnMapping)
+	  if(ReceivedLines > 0u)
 	  {
-		  PID_control();
+		  Parser_TakeLine(&ReceiveBuffer, ReceivedData);
+		  Parser_Parse(ReceivedData,&GRUZIK);
+		  ReceivedLines--;
 	  }
+
+	  if(MappingAutoClosePending != 0u)
+	  {
+		  MappingAutoClosePending = 0u;
+		  Parser_FinishMappingAutoClosed(&GRUZIK);
+	  }
+
+	  Robot_ServiceControl();
+	  Robot_ServiceTelemetry();
+	  RobotSettings_Service(&GRUZIK, &map);
 
 
   }
@@ -376,100 +388,302 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
 	if(htim->Instance == TIM5)
 	{
-		/*Get Encoder values*/
 		Motor_L.EncoderValue = __HAL_TIM_GET_COUNTER(&htim4);
 		Motor_R.EncoderValue = __HAL_TIM_GET_COUNTER(&htim1);
-		/*Set central point for encoders again*/
-		htim4.Instance->CNT = 20000;
-		htim1.Instance->CNT = 20000;
+		htim4.Instance->CNT = ROBOT_ENCODER_COUNTER_CENTER;
+		htim1.Instance->CNT = ROBOT_ENCODER_COUNTER_CENTER;
 
-	    Motor_CalculateSpeed(&Motor_R);
-	    Motor_CalculateSpeed(&Motor_L);
+		Motor_CalculateSpeed(&Motor_R);
+		Motor_CalculateSpeed(&Motor_L);
 
-	    /*integration of Gyroscope data for Z axis*/
-	    MPU6050_Get_Accel_Scale(&myAccelScaled);
-	    MPU6050_Get_Gyro_Scale(&myGyroScaled);
+		MPU6050_Get_Accel_Scale(&myAccelScaled);
+		MPU6050_Get_Gyro_Scale(&myGyroScaled);
 
-	    Orientation += map.OriIMU / 0.01745329251f;
+		GyroZRawDps = myGyroScaled.z * ROBOT_IMU_Z_DIRECTION;
+		if((fabsf(GyroZRawDps) < ROBOT_GYRO_STATIONARY_DPS) &&
+		   (fabsf(Motor_L.DistanceInMeasurement) < ROBOT_ENCODER_STATIONARY_M) &&
+		   (fabsf(Motor_R.DistanceInMeasurement) < ROBOT_ENCODER_STATIONARY_M))
+		{
+			GyroZBiasDps += ROBOT_GYRO_BIAS_LEARN_RATE * (GyroZRawDps - GyroZBiasDps);
+		}
+		GyroZCorrectedDps = GyroZRawDps - GyroZBiasDps;
 
-		if(GRUZIK.blockinterrups == 0)
-		{															   // 0.002 best
-			if((GRUZIK.state == UnMapping)&&(SDReadingReady == 1))     // 0.0015
-			{                                                         //-0.001
-			  map.OriIMU = (((myGyroScaled.z * YAW_MEASUREMENT_PERIOD) - 0.0025)* 0.01745329251f) * 1;//1.03325
-			  DriveOnMap(&map, &Motor_L, &Motor_R);
-			}
-			else if((GRUZIK.state == UnSpeedMapping)&&(SDReadingReady == 1))     // 0.0015
-			{                                                         //+0.002
-			  map.OriIMU = (((myGyroScaled.z * YAW_MEASUREMENT_PERIOD) - 0.001)* 0.01745329251f) * 1;//1.03325
-			  SpeedUnMapping(&map, &Motor_L, &Motor_R);
-			}
-			else if((GRUZIK.state == Mappig)&&(SDReadingReady == 1))// + 0.00200
-			{                                                         // + 0.00125
-			  map.OriIMU = (((myGyroScaled.z * YAW_MEASUREMENT_PERIOD) - 0.0025)* 0.01745329251f) * 1.2961f;//1.3325 // zwiększenie zamyka trase
-			  MapUpdateV2(&map, &Motor_L, &Motor_R);                  //-0.001                   1.285
-			}														  //-0.000075                 1.296 narazie best
-		}															// rzeszow -0.003 i 1.296
-
-		  /*If there is a message form Bluetooth Parser it*/
-		  if(ReceivedLines > 0)
-		  {
-			  Parser_TakeLine(&ReceiveBuffer, ReceivedData);
-			  Parser_Parse(ReceivedData,&GRUZIK);
-
-			  ReceivedLines--;
-		  }
-		  /*After one cycle of un-mapping drive with route*/
-		  if(GRUZIK.UnMappingDone == 1)
-		  {
-			  GRUZIK.Kp = 0.015;
-			  GRUZIK.Kd = 0.085;
-			  GRUZIK.Base_speed_R = 95;
-			  GRUZIK.Base_speed_L = 95;
-			  GRUZIK.Max_speed_R = 165;
-			  GRUZIK.Max_speed_L = 165;
-
-			  /*Sharp turn speed*/
-			  GRUZIK.Sharp_bend_speed_right= -45;
-			  GRUZIK.Sharp_bend_speed_left= 90;
-			  GRUZIK.Bend_speed_right= -55;
-			  GRUZIK.Bend_speed_left= 105;
-
-			  GRUZIK.state = PidFollowing;
-//			  if(HAL_GetTick() >= (GRUZIK.DoneUnMappingTimer + 1750))
-//			  {
-//					HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, GPIO_PIN_RESET);
-//					HAL_GPIO_WritePin(GPIOC, GPIO_PIN_5, GPIO_PIN_RESET);
-//					HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, GPIO_PIN_RESET);
-//			  }
-		  }
+		Odometry_Update(&RobotOdom,
+						Motor_L.DistanceInMeasurement,
+						Motor_R.DistanceInMeasurement,
+						GyroZCorrectedDps,
+						ROBOT_CONTROL_DT_S);
+		Map_SyncPose(&map, &RobotOdom.pose, RobotOdom.last_delta_distance_m);
+		map.OriIMU = RobotOdom.last_delta_yaw_gyro_rad;
+		GRUZIK.Yaw = RobotOdom.pose.yaw_rad;
+		GRUZIK.Orientation = RobotOdom.pose.yaw_rad * RAD_TO_DEG;
 	}
 }
 /*Functions*/
-void delay_us (uint16_t us) //Blocking function
+void Robot_ResetOdometry(void)
 {
-	__HAL_TIM_SET_COUNTER(&htim3,0);  // set the counter value a 0
-	while (__HAL_TIM_GET_COUNTER(&htim3) < us);  // wait for the counter to reach the us input in the parameter
+	Odometry_Reset(&RobotOdom);
+	Map_SyncPose(&map, &RobotOdom.pose, 0.0f);
+	GRUZIK.Yaw = 0.0f;
+	GRUZIK.Orientation = 0.0f;
 }
 
-void Set_Pin_Output (GPIO_TypeDef *GPIOx, uint16_t GPIO_Pin)
+static void Robot_StopOutputs(void)
 {
-	GPIO_InitTypeDef GPIO_InitStruct = {0};
-	GPIO_InitStruct.Pin = GPIO_Pin;
-	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-	HAL_GPIO_Init(GPIOx, &GPIO_InitStruct);
+	motor_control(0.0, 0.0);
+	HAL_GPIO_WritePin(Motor_STBY_GPIO_Port, Motor_STBY_Pin, GPIO_PIN_RESET);
 }
 
-void Set_Pin_Input (GPIO_TypeDef *GPIOx, uint16_t GPIO_Pin)
+static void Robot_UpdateSpeedStats(void)
+{
+	float current_speed = 0.5f * (Motor_R.MetersPerSecondLPF.output + Motor_L.MetersPerSecondLPF.output);
+	if(current_speed < 0.0f)
+	{
+		current_speed = -current_speed;
+	}
+
+	GRUZIK.AverageSpeedSum += current_speed;
+	GRUZIK.AverageSpeedNum += 1.0f;
+	GRUZIK.AverageSpeed = GRUZIK.AverageSpeedSum / GRUZIK.AverageSpeedNum;
+
+	if(current_speed > GRUZIK.MaxSpeed)
+	{
+		GRUZIK.MaxSpeed = current_speed;
+	}
+}
+
+static void Robot_ServiceControl(void)
+{
+	static uint32_t last_control_ms = 0u;
+	uint32_t now = HAL_GetTick();
+
+	if((now - last_control_ms) < ROBOT_LINE_CONTROL_PERIOD_MS)
+	{
+		return;
+	}
+	last_control_ms = now;
+
+	if(GRUZIK.PowerMode == Start)
+	{
+		if(GRUZIK.blockinterrups == 0u)
+		{
+			if((GRUZIK.state == UnMapping) && (SDReadingReady == 1u))
+			{
+				DriveOnMap(&map, &RobotOdom.pose);
+			}
+			else if((GRUZIK.state == UnSpeedMapping) && (SDReadingReady == 1u))
+			{
+				SpeedUnMapping(&map, &RobotOdom.pose);
+			}
+			else if((GRUZIK.state == Mapping) && (SDReadingReady == 1u))
+			{
+				float map_speed_mps = 0.5f * (Motor_R.MetersPerSecondLPF.output + Motor_L.MetersPerSecondLPF.output);
+				MapUpdateV2(&map, &RobotOdom.pose, map_speed_mps, GRUZIK.Error_P, GRUZIK.Error_D);
+				if(map.AutoClosed != 0u)
+				{
+					MappingAutoClosePending = 1u;
+				}
+			}
+		}
+
+		if(!((GRUZIK.state == UnMapping) && (map.PlaybackActive != 0u)) && (map.AutoClosed == 0u))
+		{
+			PID_control();
+		}
+
+		Robot_UpdateSpeedStats();
+
+		if((GRUZIK.UnMappingDone == 1u) && (HAL_GetTick() >= (GRUZIK.DoneUnMappingTimer + 1750u)))
+		{
+			GRUZIK.PowerMode = Stop;
+			Robot_StopOutputs();
+		}
+	}
+	else
+	{
+		Parser_ServiceManualDriveTimeout(&GRUZIK);
+		if((TireCleaningActive == 0u) && (ManualDriveActive == 0u))
+		{
+			Robot_StopOutputs();
+		}
+	}
+}
+
+static void Robot_ServiceTelemetry(void)
+{
+	static uint32_t last_telemetry_ms = 0u;
+
+	if(TelemetryMode == TELEMETRY_OFF)
+	{
+		return;
+	}
+
+	uint32_t now = HAL_GetTick();
+	if((now - last_telemetry_ms) < ROBOT_TELEMETRY_PERIOD_MS)
+	{
+		return;
+	}
+	last_telemetry_ms = now;
+
+	if(TelemetryMode == TELEMETRY_DEBUG)
+	{
+		(void)QTR8_read();
+		Robot_SendOdomTelemetry();
+		Robot_SendDebugTelemetry();
+	}
+	else
+	{
+		Robot_SendOdomTelemetry();
+	}
+}
+
+static void Robot_SendOdomTelemetry(void)
+{
+	char tx[192];
+	int len = snprintf(tx, sizeof(tx),
+					   "ODOM,%.4f,%.4f,%.2f,%.4f,%.3f,%.3f,%.2f,%.2f,%.2f\r\n",
+					   RobotOdom.pose.x_m,
+					   RobotOdom.pose.y_m,
+					   RobotOdom.pose.yaw_rad * RAD_TO_DEG,
+					   RobotOdom.total_distance_m,
+					   Motor_L.MetersPerSecondLPF.output,
+					   Motor_R.MetersPerSecondLPF.output,
+					   GyroZCorrectedDps,
+					   RobotOdom.encoder_yaw_rad * RAD_TO_DEG,
+					   RobotOdom.gyro_yaw_rad * RAD_TO_DEG);
+
+	if((len > 0) && (len < (int)sizeof(tx)))
+	{
+		HAL_UART_Transmit(&hlpuart1, (uint8_t *)tx, (uint16_t)len, 100);
+	}
+}
+
+static void Robot_SendDebugTelemetry(void)
+{
+	char tx[256];
+	int len = snprintf(tx, sizeof(tx),
+					   "DBG,%d,%d,%d,%ld,%ld,%.1f,%.1f,%.4f,%.4f,%.2f,%.2f,%.2f,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u\r\n",
+					   GRUZIK.SensorPosition,
+					   GRUZIK.actives,
+					   GRUZIK.Last_end,
+					   (long)Motor_L.EncoderDeltaCounts,
+					   (long)Motor_R.EncoderDeltaCounts,
+					   Motor_L.EncoderRpmFilter.output,
+					   Motor_R.EncoderRpmFilter.output,
+					   Motor_L.DistanceTraveled,
+					   Motor_R.DistanceTraveled,
+					   GyroZRawDps,
+					   GyroZBiasDps,
+					   GyroZCorrectedDps,
+					   GRUZIK.SensorValues[0],
+					   GRUZIK.SensorValues[1],
+					   GRUZIK.SensorValues[2],
+					   GRUZIK.SensorValues[3],
+					   GRUZIK.SensorValues[4],
+					   GRUZIK.SensorValues[5],
+					   GRUZIK.SensorValues[6],
+					   GRUZIK.SensorValues[7],
+					   GRUZIK.SensorValues[8],
+					   GRUZIK.SensorValues[9],
+					   GRUZIK.SensorValues[10],
+					   GRUZIK.SensorValues[11]);
+
+	if((len > 0) && (len < (int)sizeof(tx)))
+	{
+		HAL_UART_Transmit(&hlpuart1, (uint8_t *)tx, (uint16_t)len, 100);
+	}
+}
+
+static float ClampMotorCommand(float speed)
+{
+	if(speed < 0.0f)
+	{
+		return 0.0f;
+	}
+	if(speed > 250.0f)
+	{
+		return 250.0f;
+	}
+	return speed;
+}
+
+static uint32_t LineSensorThresholdUs(void)
+{
+	uint32_t threshold_us = GRUZIK.treshold;
+	if(threshold_us == 0u)
+	{
+		threshold_us = ROBOT_LINE_SENSOR_DEFAULT_THRESHOLD_US;
+	}
+	if(threshold_us < ROBOT_LINE_SENSOR_MIN_THRESHOLD_US)
+	{
+		threshold_us = ROBOT_LINE_SENSOR_MIN_THRESHOLD_US;
+	}
+	if(threshold_us > ROBOT_LINE_SENSOR_MAX_THRESHOLD_US)
+	{
+		threshold_us = ROBOT_LINE_SENSOR_MAX_THRESHOLD_US;
+	}
+	return threshold_us;
+}
+
+static void LineSensorDelayUs(uint32_t delay_us)
+{
+	uint16_t start = (uint16_t)__HAL_TIM_GET_COUNTER(&htim3);
+	while((uint16_t)((uint16_t)__HAL_TIM_GET_COUNTER(&htim3) - start) < delay_us)
+	{
+	}
+}
+
+static void LineSensorSetInput(void)
 {
 	GPIO_InitTypeDef GPIO_InitStruct = {0};
-	GPIO_InitStruct.Pin = GPIO_Pin;
 	GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-	GPIO_InitStruct.Pull = GPIO_PULLUP;
-	HAL_GPIO_Init(GPIOx, &GPIO_InitStruct);
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+
+	GPIO_InitStruct.Pin = SENSOR10_Pin | SENSOR11_Pin | SENSOR12_Pin;
+	HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+	GPIO_InitStruct.Pin = SENSOR1_Pin | SENSOR2_Pin | SENSOR3_Pin | SENSOR4_Pin | SENSOR5_Pin;
+	HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+	GPIO_InitStruct.Pin = SENSOR7_Pin | SENSOR8_Pin | SENSOR9_Pin;
+	HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+
+	GPIO_InitStruct.Pin = SENSOR6_Pin;
+	HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
 }
 
+static void LineSensorSetOutputHigh(void)
+{
+	GPIO_InitTypeDef GPIO_InitStruct = {0};
+	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+
+	GPIO_InitStruct.Pin = SENSOR10_Pin | SENSOR11_Pin | SENSOR12_Pin;
+	HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+	HAL_GPIO_WritePin(GPIOA, SENSOR10_Pin | SENSOR11_Pin | SENSOR12_Pin, GPIO_PIN_SET);
+
+	GPIO_InitStruct.Pin = SENSOR1_Pin | SENSOR2_Pin | SENSOR3_Pin | SENSOR4_Pin | SENSOR5_Pin;
+	HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+	HAL_GPIO_WritePin(GPIOB, SENSOR1_Pin | SENSOR2_Pin | SENSOR3_Pin | SENSOR4_Pin | SENSOR5_Pin, GPIO_PIN_SET);
+
+	GPIO_InitStruct.Pin = SENSOR7_Pin | SENSOR8_Pin | SENSOR9_Pin;
+	HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+	HAL_GPIO_WritePin(GPIOC, SENSOR7_Pin | SENSOR8_Pin | SENSOR9_Pin, GPIO_PIN_SET);
+
+	GPIO_InitStruct.Pin = SENSOR6_Pin;
+	HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
+	HAL_GPIO_WritePin(GPIOD, SENSOR6_Pin, GPIO_PIN_SET);
+}
+
+static uint8_t LineSensorIsActive(GPIO_PinState state)
+{
+#if ROBOT_LINE_SENSOR_ACTIVE_HIGH
+	return (state == GPIO_PIN_SET) ? 1u : 0u;
+#else
+	return (state == GPIO_PIN_RESET) ? 1u : 0u;
+#endif
+}
 
 void motor_control (double pos_right, double pos_left)
 
@@ -480,6 +694,7 @@ void motor_control (double pos_right, double pos_left)
 		{
 			Motor_L.set_speed = (pos_left * -1);
 			PI_Loop(&Motor_L);
+			Motor_L.speed = ClampMotorCommand(Motor_L.speed);
 
 			__HAL_TIM_SET_COMPARE (&htim2, TIM_CHANNEL_4, (uint32_t)((ARR*Motor_L.speed) * GRUZIK.Speed_level));//PWM_L
 			HAL_GPIO_WritePin(Motor_L_A_GPIO_Port, Motor_L_B_Pin, GPIO_PIN_SET);
@@ -490,6 +705,7 @@ void motor_control (double pos_right, double pos_left)
 		{
 			Motor_L.set_speed = pos_left;
 			PI_Loop(&Motor_L);
+			Motor_L.speed = ClampMotorCommand(Motor_L.speed);
 
 			__HAL_TIM_SET_COMPARE (&htim2, TIM_CHANNEL_4, (uint32_t)((ARR*Motor_L.speed) * GRUZIK.Speed_level));//PWM_L
 			HAL_GPIO_WritePin(Motor_L_A_GPIO_Port, Motor_L_B_Pin, GPIO_PIN_RESET);
@@ -499,6 +715,7 @@ void motor_control (double pos_right, double pos_left)
 		{
 			Motor_R.set_speed = (pos_right * -1);
 			PI_Loop(&Motor_R);
+			Motor_R.speed = ClampMotorCommand(Motor_R.speed);
 
 			__HAL_TIM_SET_COMPARE (&htim2, TIM_CHANNEL_1, (uint32_t)((ARR*Motor_R.speed) * GRUZIK.Speed_level));//PWM_R
 			HAL_GPIO_WritePin(Motor_R_A_GPIO_Port, Motor_R_A_Pin, GPIO_PIN_SET);
@@ -508,6 +725,7 @@ void motor_control (double pos_right, double pos_left)
 		{
 			Motor_R.set_speed = pos_right;
 			PI_Loop(&Motor_R);
+			Motor_R.speed = ClampMotorCommand(Motor_R.speed);
 
 			__HAL_TIM_SET_COMPARE (&htim2, TIM_CHANNEL_1, (uint32_t)((ARR*Motor_R.speed) * GRUZIK.Speed_level));//PWM_R
 			HAL_GPIO_WritePin(Motor_R_A_GPIO_Port, Motor_R_A_Pin, GPIO_PIN_RESET);
@@ -567,168 +785,74 @@ void sharp_turn ()
 }
 int QTR8_read ()
 {
-	HAL_GPIO_WritePin(LEDON_GPIO_Port, LEDON_Pin, 1);
+	HAL_GPIO_WritePin(LEDON_GPIO_Port, LEDON_Pin, GPIO_PIN_SET);
+	LineSensorSetOutputHigh();
+	LineSensorDelayUs(ROBOT_LINE_SENSOR_CHARGE_US);
+	LineSensorSetInput();
+	LineSensorDelayUs(LineSensorThresholdUs());
 
-	Set_Pin_Output(SENSOR1_GPIO_Port, SENSOR1_Pin);
-	Set_Pin_Output(SENSOR2_GPIO_Port, SENSOR2_Pin);
-	Set_Pin_Output(SENSOR3_GPIO_Port, SENSOR3_Pin);
-	Set_Pin_Output(SENSOR4_GPIO_Port, SENSOR4_Pin);
-	Set_Pin_Output(SENSOR5_GPIO_Port, SENSOR5_Pin);
-	Set_Pin_Output(SENSOR6_GPIO_Port, SENSOR6_Pin);
-	Set_Pin_Output(SENSOR7_GPIO_Port, SENSOR7_Pin);
-	Set_Pin_Output(SENSOR8_GPIO_Port, SENSOR8_Pin);
-	Set_Pin_Output(SENSOR9_GPIO_Port, SENSOR9_Pin);
-	Set_Pin_Output(SENSOR10_GPIO_Port, SENSOR10_Pin);
-	Set_Pin_Output(SENSOR11_GPIO_Port, SENSOR11_Pin);
-	Set_Pin_Output(SENSOR12_GPIO_Port, SENSOR12_Pin);
+	const GPIO_PinState sensor_state[12] = {
+		HAL_GPIO_ReadPin(SENSOR1_GPIO_Port, SENSOR1_Pin),
+		HAL_GPIO_ReadPin(SENSOR2_GPIO_Port, SENSOR2_Pin),
+		HAL_GPIO_ReadPin(SENSOR3_GPIO_Port, SENSOR3_Pin),
+		HAL_GPIO_ReadPin(SENSOR4_GPIO_Port, SENSOR4_Pin),
+		HAL_GPIO_ReadPin(SENSOR5_GPIO_Port, SENSOR5_Pin),
+		HAL_GPIO_ReadPin(SENSOR6_GPIO_Port, SENSOR6_Pin),
+		HAL_GPIO_ReadPin(SENSOR7_GPIO_Port, SENSOR7_Pin),
+		HAL_GPIO_ReadPin(SENSOR8_GPIO_Port, SENSOR8_Pin),
+		HAL_GPIO_ReadPin(SENSOR9_GPIO_Port, SENSOR9_Pin),
+		HAL_GPIO_ReadPin(SENSOR10_GPIO_Port, SENSOR10_Pin),
+		HAL_GPIO_ReadPin(SENSOR11_GPIO_Port, SENSOR11_Pin),
+		HAL_GPIO_ReadPin(SENSOR12_GPIO_Port, SENSOR12_Pin)
+	};
 
-	HAL_GPIO_WritePin (SENSOR1_GPIO_Port, SENSOR1_Pin, 1);
-	HAL_GPIO_WritePin (SENSOR2_GPIO_Port, SENSOR2_Pin, 1);
-	HAL_GPIO_WritePin (SENSOR3_GPIO_Port, SENSOR3_Pin, 1);
-	HAL_GPIO_WritePin (SENSOR4_GPIO_Port, SENSOR4_Pin, 1);
-	HAL_GPIO_WritePin (SENSOR5_GPIO_Port, SENSOR5_Pin, 1);
-	HAL_GPIO_WritePin (SENSOR6_GPIO_Port, SENSOR6_Pin, 1);
-	HAL_GPIO_WritePin (SENSOR7_GPIO_Port, SENSOR7_Pin, 1);
-	HAL_GPIO_WritePin (SENSOR8_GPIO_Port, SENSOR8_Pin, 1);
-	HAL_GPIO_WritePin (SENSOR9_GPIO_Port, SENSOR9_Pin, 1);
-	HAL_GPIO_WritePin (SENSOR10_GPIO_Port, SENSOR10_Pin, 1);
-	HAL_GPIO_WritePin (SENSOR11_GPIO_Port, SENSOR11_Pin, 1);
-	HAL_GPIO_WritePin (SENSOR12_GPIO_Port, SENSOR12_Pin, 1);
-
-	delay_us(10);
-
-	Set_Pin_Input(SENSOR1_GPIO_Port, SENSOR1_Pin);
-	Set_Pin_Input(SENSOR2_GPIO_Port, SENSOR2_Pin);
-	Set_Pin_Input(SENSOR3_GPIO_Port, SENSOR3_Pin);
-	Set_Pin_Input(SENSOR4_GPIO_Port, SENSOR4_Pin);
-	Set_Pin_Input(SENSOR5_GPIO_Port, SENSOR5_Pin);
-	Set_Pin_Input(SENSOR6_GPIO_Port, SENSOR6_Pin);
-	Set_Pin_Input(SENSOR7_GPIO_Port, SENSOR7_Pin);
-	Set_Pin_Input(SENSOR8_GPIO_Port, SENSOR8_Pin);
-	Set_Pin_Input(SENSOR9_GPIO_Port, SENSOR9_Pin);
-	Set_Pin_Input(SENSOR10_GPIO_Port, SENSOR10_Pin);
-	Set_Pin_Input(SENSOR11_GPIO_Port, SENSOR11_Pin);
-	Set_Pin_Input(SENSOR12_GPIO_Port, SENSOR12_Pin);
-
-	// Threshold
-	 delay_us(4500);
-	 	 	 //!!! FOR SENSOR TESTING ONLY !!!//
-
-//	 uint8_t sensory[12];
-//	 sensory[0] = HAL_GPIO_ReadPin(SENSOR1_GPIO_Port, SENSOR1_Pin);
-//	 sensory[1] = HAL_GPIO_ReadPin(SENSOR2_GPIO_Port, SENSOR2_Pin);
-//	 sensory[2] = HAL_GPIO_ReadPin(SENSOR3_GPIO_Port, SENSOR3_Pin);
-//	 sensory[3] = HAL_GPIO_ReadPin(SENSOR4_GPIO_Port, SENSOR4_Pin);
-//	 sensory[4] = HAL_GPIO_ReadPin(SENSOR5_GPIO_Port, SENSOR5_Pin);
-//	 sensory[5] = HAL_GPIO_ReadPin(SENSOR6_GPIO_Port, SENSOR6_Pin);
-//	 sensory[6] = HAL_GPIO_ReadPin(SENSOR7_GPIO_Port, SENSOR7_Pin);
-//	 sensory[7] = HAL_GPIO_ReadPin(SENSOR8_GPIO_Port, SENSOR8_Pin);
-//	 sensory[8] = HAL_GPIO_ReadPin(SENSOR9_GPIO_Port, SENSOR9_Pin);
-//	 sensory[9] = HAL_GPIO_ReadPin(SENSOR10_GPIO_Port, SENSOR10_Pin);
-//	 sensory[10] = HAL_GPIO_ReadPin(SENSOR11_GPIO_Port, SENSOR11_Pin);
-//	 sensory[11] = HAL_GPIO_ReadPin(SENSOR12_GPIO_Port, SENSOR12_Pin);
-//	 uint8_t Message[124];
-//	 sprintf((char*)Message,"S1: %d S2: %d S3: %d S4: %d S5: %d S6: %d S7: %d S8: %d S9: %d S10: %d S11: %d S12: %d \n\r", sensory[0],sensory[1],sensory[2],sensory[3],sensory[4],sensory[5],sensory[6],sensory[7],
-//			 sensory[8],sensory[9],sensory[10],sensory[11]);
-//	 HAL_UART_Transmit(&hlpuart1, Message, strlen((char*)Message), 100);
-
-	Sensors_read = 0x000000000000;
+	Sensors_read = 0x000000000000ULL;
 	int pos = 0;
-  int active = 0;
+	int active = 0;
 
-	if (HAL_GPIO_ReadPin(SENSOR1_GPIO_Port, SENSOR1_Pin)) { // LEFT SIDE
-		Sensors_read |= 0x000000000001;
-		pos += 1000 * SENSOR_SCALE;//1000
-		active++;
-		if(HAL_GetTick() > (LastEndTimer + 50))
+	for(uint8_t i = 0u; i < 12u; i++)
+	{
+		GRUZIK.SensorValues[i] = LineSensorIsActive(sensor_state[i]);
+		if(GRUZIK.SensorValues[i] != 0u)
 		{
-			LastEndTimer = HAL_GetTick();
-			Last_end = 1;
+			Sensors_read |= (1ULL << (i * 4u));
+			pos += (int)(i + 1u) * 1000 * SENSOR_SCALE;
+			active++;
 		}
-
 	}
-	if (HAL_GPIO_ReadPin(SENSOR2_GPIO_Port, SENSOR2_Pin)) {
-		Sensors_read |= 0x000000000010;
-		pos += 2000 * SENSOR_SCALE;//2000
-    active++;
-    	//Last_end = 1;//1
-  }
-	if (HAL_GPIO_ReadPin(SENSOR3_GPIO_Port, SENSOR3_Pin)) {
-		Sensors_read |= 0x000000000100;
-		pos += 3000 * SENSOR_SCALE;//3000
-    active++;
-    	//Last_end = 1;//1
-  }
-	if (HAL_GPIO_ReadPin(SENSOR4_GPIO_Port, SENSOR4_Pin)) {
-		Sensors_read |= 0x000000001000;
-		pos += 4000 * SENSOR_SCALE;//4000
-    active++;
-  }
-	if (HAL_GPIO_ReadPin(SENSOR5_GPIO_Port, SENSOR5_Pin)) {
-		Sensors_read |= 0x000000010000;
-		pos += 5000 * SENSOR_SCALE;//5000
-    active++;
-  }
-	if (HAL_GPIO_ReadPin(SENSOR6_GPIO_Port, SENSOR6_Pin)) {
-		Sensors_read |= 0x000000100000;
-		pos += 6000 * SENSOR_SCALE;//6000
-    active++;
-  }
-	if (HAL_GPIO_ReadPin(SENSOR7_GPIO_Port, SENSOR7_Pin)) {
-		Sensors_read |= 0x000001000000;
-		pos += 7000 * SENSOR_SCALE;//7000
-    active++;
-  }
-	if (HAL_GPIO_ReadPin(SENSOR8_GPIO_Port, SENSOR8_Pin)) {
-		Sensors_read |= 0x000010000000;
-		pos += 8000 * SENSOR_SCALE;//8000
-    active++;
-  }
-  if (HAL_GPIO_ReadPin(SENSOR9_GPIO_Port, SENSOR9_Pin)) {
-	   Sensors_read |= 0x000100000000;
-	   pos += 9000 * SENSOR_SCALE;//8000
-	active++;
 
-  }
-  if (HAL_GPIO_ReadPin(SENSOR10_GPIO_Port, SENSOR10_Pin)) {
-	   Sensors_read |= 0x001000000000;
-	   pos += 10000 * SENSOR_SCALE;//8000
-    active++;
-	  // Last_end = 0;//0
-  }
-  if (HAL_GPIO_ReadPin(SENSOR11_GPIO_Port, SENSOR11_Pin)) {
-	   Sensors_read |= 0x010000000000;
-	   pos += 11000 * SENSOR_SCALE;//8000
-    active++;
-	  // Last_end = 0;//0
-  }
-  if (HAL_GPIO_ReadPin(SENSOR12_GPIO_Port, SENSOR12_Pin)) { // RIGHT SIDE
-	   Sensors_read |= 0x100000000000;
-	   pos += 12000 * SENSOR_SCALE;//8000
-       active++;
+	if((GRUZIK.SensorValues[0] != 0u) && (HAL_GetTick() > (LastEndTimer + 50u)))
+	{
+		LastEndTimer = HAL_GetTick();
+		Last_end = 1;
+	}
+	if((GRUZIK.SensorValues[11] != 0u) && (HAL_GetTick() > (LastEndTimer + 50u)))
+	{
+		LastEndTimer = HAL_GetTick();
+		Last_end = 0;
+	}
 
-        if(HAL_GetTick() > (LastEndTimer + 50))//50
-		{
-			LastEndTimer = HAL_GetTick();
-			Last_end = 0;
-		}
+	HAL_GPIO_WritePin(LEDON_GPIO_Port, LEDON_Pin, GPIO_PIN_RESET);
 
-  }
+	actives = active;
+	GRUZIK.actives = active;
+	GRUZIK.Last_end = Last_end;
 
-  HAL_GPIO_WritePin(LEDON_GPIO_Port, LEDON_Pin, 0);
-
-  actives = active;
-	Position = pos/active;
-
-	if (actives == 0)
+	if(active == 0)
+	{
 		Last_idle++;
+		Position = (Last_end == 1) ? (1000 * SENSOR_SCALE) : (12000 * SENSOR_SCALE);
+	}
 	else
+	{
 		Last_idle = 0;
+		Position = pos / active;
+	}
 
-	return pos/active;
+	GRUZIK.Last_idle = Last_idle;
+	GRUZIK.SensorPosition = Position;
+	return Position;
 }
-
-
 void forward_brake(int pos_right, int pos_left)
 {
 	if (actives == 0)
@@ -764,12 +888,15 @@ void PID_control()
   past_errors(error);
 
   P = error;
+  GRUZIK.P = P;
   GRUZIK.Error_P = P;
   I = errors_sum(5, 0);
   D = error - Last_error;
+  GRUZIK.D = D;
   GRUZIK.Error_D = D;
   R = errors_sum(5, 1);
   Last_error = error;
+  GRUZIK.Last_error = Last_error;
 
   int motorspeed = P*GRUZIK.Kp + I*Ki + D*GRUZIK.Kd;
 

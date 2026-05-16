@@ -11,6 +11,8 @@
 "./Core/Src/main.o"
 "./Core/Src/map.o"
 "./Core/Src/motor.o"
+"./Core/Src/odometry.o"
+"./Core/Src/robot_settings.o"
 "./Core/Src/spi.o"
 "./Core/Src/stm32g4xx_hal_msp.o"
 "./Core/Src/stm32g4xx_it.o"

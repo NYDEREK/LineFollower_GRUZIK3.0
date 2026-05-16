@@ -54,6 +54,8 @@ void Error_Handler(void);
 
 /* USER CODE BEGIN EFP */
 void motor_control (double pos_right, double pos_left);
+int QTR8_read(void);
+void Robot_ResetOdometry(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/

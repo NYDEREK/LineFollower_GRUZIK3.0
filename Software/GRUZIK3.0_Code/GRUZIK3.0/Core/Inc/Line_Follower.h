@@ -8,8 +8,11 @@
 #ifndef INC_LINE_FOLLOWER_H_
 #define INC_LINE_FOLLOWER_H_
 
+#include "main.h"
+
 typedef struct
 {
+	uint8_t PowerMode;
 	float Kp;
 	float Kd;
 	float Error_P;
@@ -30,8 +33,30 @@ typedef struct
 	float Speed_level;
 	float Speed_offset;
 
+	float MaxSpeed;
+	float AverageSpeed;
+	float AverageSpeedSum;
+	float AverageSpeedNum;
+
 	uint8_t DrivingOnMap;
 	uint8_t blockinterrups;
+	uint8_t LineFollowing;
+
+	uint8_t SensorValues[12];
+	uint16_t treshold;
+	uint32_t LastEndTimer;
+	int Last_end;
+	int Last_idle;
+	int SensorPosition;
+	int actives;
+
+	float P;
+	float D;
+	int Errors[10];
+	float Last_error;
+
+	float Yaw;
+	float Orientation;
 
 	uint32_t DoneUnMappingTimer;
 	uint8_t UnMappingDone;
@@ -41,10 +66,17 @@ typedef struct
 } LineFollower_t;
 enum state
 {
-	PidFollowing,
-	Mappig,
-	UnMapping,
-	UnSpeedMapping,
+	PidFollowing = 0,
+	Mapping = 1,
+	UnMapping = 2,
+	UnSpeedMapping = 3,
+};
+
+enum PowerState
+{
+	Initialization = 0,
+	Stop = 1,
+	Start = 2,
 };
 
 #endif /* INC_LINE_FOLLOWER_H_ */

@@ -1,4 +1,4 @@
-Core/Src/map.o: ../Core/Src/map.c ../Core/Inc/main.h \
+Core/Src/map.o: ../Core/Src/map.c ../Core/Inc/map.h ../Core/Inc/main.h \
  ../Drivers/STM32G4xx_HAL_Driver/Inc/stm32g4xx_hal.h \
  ../Core/Inc/stm32g4xx_hal_conf.h \
  ../Drivers/STM32G4xx_HAL_Driver/Inc/stm32g4xx_hal_rcc.h \
@@ -35,15 +35,16 @@ Core/Src/map.o: ../Core/Src/map.c ../Core/Inc/main.h \
  ../Drivers/STM32G4xx_HAL_Driver/Inc/stm32g4xx_hal_tim_ex.h \
  ../Drivers/STM32G4xx_HAL_Driver/Inc/stm32g4xx_hal_uart.h \
  ../Drivers/STM32G4xx_HAL_Driver/Inc/stm32g4xx_hal_uart_ex.h \
- ../Core/Inc/map.h ../Core/Inc/main.h ../Core/Inc/Line_Follower.h \
- ../Core/Inc/motor.h ../Core/Inc/LowPassFilter.h \
- ../Core/Inc/Line_Follower.h ../Core/Inc/motor.h ../FATFS/App/app_fatfs.h \
- ../Middlewares/Third_Party/FatFs/src/ff.h \
+ ../Core/Inc/Line_Follower.h ../Core/Inc/motor.h \
+ ../Core/Inc/LowPassFilter.h ../Core/Inc/robot_config.h \
+ ../Core/Inc/odometry.h ../Core/Inc/Line_Follower.h \
+ ../FATFS/App/app_fatfs.h ../Middlewares/Third_Party/FatFs/src/ff.h \
  ../Middlewares/Third_Party/FatFs/src/integer.h ../FATFS/Target/ffconf.h \
- ../Middlewares/Third_Party/FatFs/src/ff_gen_drv.h \
+ ../Core/Inc/main.h ../Middlewares/Third_Party/FatFs/src/ff_gen_drv.h \
  ../Middlewares/Third_Party/FatFs/src/diskio.h \
  ../Middlewares/Third_Party/FatFs/src/ff.h ../FATFS/Target/user_diskio.h \
- ../Core/Inc/SimpleParser.h ../Core/Inc/RingBuffer.h
+ ../Core/Inc/robot_config.h
+../Core/Inc/map.h:
 ../Core/Inc/main.h:
 ../Drivers/STM32G4xx_HAL_Driver/Inc/stm32g4xx_hal.h:
 ../Core/Inc/stm32g4xx_hal_conf.h:
@@ -81,20 +82,19 @@ Core/Src/map.o: ../Core/Src/map.c ../Core/Inc/main.h \
 ../Drivers/STM32G4xx_HAL_Driver/Inc/stm32g4xx_hal_tim_ex.h:
 ../Drivers/STM32G4xx_HAL_Driver/Inc/stm32g4xx_hal_uart.h:
 ../Drivers/STM32G4xx_HAL_Driver/Inc/stm32g4xx_hal_uart_ex.h:
-../Core/Inc/map.h:
-../Core/Inc/main.h:
 ../Core/Inc/Line_Follower.h:
 ../Core/Inc/motor.h:
 ../Core/Inc/LowPassFilter.h:
+../Core/Inc/robot_config.h:
+../Core/Inc/odometry.h:
 ../Core/Inc/Line_Follower.h:
-../Core/Inc/motor.h:
 ../FATFS/App/app_fatfs.h:
 ../Middlewares/Third_Party/FatFs/src/ff.h:
 ../Middlewares/Third_Party/FatFs/src/integer.h:
 ../FATFS/Target/ffconf.h:
+../Core/Inc/main.h:
 ../Middlewares/Third_Party/FatFs/src/ff_gen_drv.h:
 ../Middlewares/Third_Party/FatFs/src/diskio.h:
 ../Middlewares/Third_Party/FatFs/src/ff.h:
 ../FATFS/Target/user_diskio.h:
-../Core/Inc/SimpleParser.h:
-../Core/Inc/RingBuffer.h:
+../Core/Inc/robot_config.h:
