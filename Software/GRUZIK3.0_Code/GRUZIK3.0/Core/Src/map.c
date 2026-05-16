@@ -104,27 +104,42 @@ static void ReadMapLine(Map_t *map)
 			if(len == 0)
 			{
 				/*For next 3s drive slowly using PID because map is done*/
-				map->Mapping = 0;
+				//map->Mapping = 0;
+				GRUZIK.state = PidFollowing;
 				GRUZIK.DrivingOnMap = 0;
 				GRUZIK.UnMappingDone = 1;
-				GRUZIK.blockinterrups = 1; // blocks un-mapping and mapping
+				  GRUZIK.Kp = 0.015;
+				  GRUZIK.Kd = 0.085;
+				  GRUZIK.Base_speed_R = 95;
+				  GRUZIK.Base_speed_L = 95;
+				  GRUZIK.Max_speed_R = 165;
+				  GRUZIK.Max_speed_L = 165;
 
-				/*Set values for PID*/
-				GRUZIK.Kp = 0.015;
-				GRUZIK.Kd = 0.085;
+				  /*Sharp turn speed*/
+				  GRUZIK.Sharp_bend_speed_right= -45;
+				  GRUZIK.Sharp_bend_speed_left= 90;
+				  GRUZIK.Bend_speed_right= -55;
+				  GRUZIK.Bend_speed_left= 105;
 
-				GRUZIK.Base_speed_R = 25;
-				GRUZIK.Base_speed_L = 25;
-				GRUZIK.Max_speed_R = 25;
-				GRUZIK.Max_speed_L = 25;
-
-				/*Sharp turn speed*/
-				GRUZIK.Sharp_bend_speed_right= -40;
-				GRUZIK.Sharp_bend_speed_left= 85;
-				GRUZIK.Bend_speed_right= -50;
-				GRUZIK.Bend_speed_left= 90;
-
-				GRUZIK.DoneUnMappingTimer = HAL_GetTick();
+				  GRUZIK.state = PidFollowing;
+//				GRUZIK.blockinterrups = 1; // blocks un-mapping and mapping
+//
+//				/*Set values for PID*/
+//				GRUZIK.Kp = 0.015;
+//				GRUZIK.Kd = 0.085;
+//
+//				GRUZIK.Base_speed_R = 25;
+//				GRUZIK.Base_speed_L = 25;
+//				GRUZIK.Max_speed_R = 25;
+//				GRUZIK.Max_speed_L = 25;
+//
+//				/*Sharp turn speed*/
+//				GRUZIK.Sharp_bend_speed_right= -40;
+//				GRUZIK.Sharp_bend_speed_left= 85;
+//				GRUZIK.Bend_speed_right= -50;
+//				GRUZIK.Bend_speed_left= 90;
+//
+//				GRUZIK.DoneUnMappingTimer = HAL_GetTick();
 
 				/*From now only reset of the micro-controller will allow next cycle of un-mapping*/
 				return;
@@ -189,11 +204,10 @@ void DriveOnMap(Map_t *map, motor_t *MotorLeft, motor_t *MotorRight)
 	map->Xri = map->Xri + ((Ti * cosf(map->Ori))/2);
 	map->Yri = map->Yri + ((Ti * sinf(map->Ori)))/2;
 
-
 	// How near to next point we are ?
 	float dx = map->SetX - map->Xri;
 	float dy = map->SetY - map->Yri;
-	if(sqrtf(dx*dx + dy*dy) < 0.035f)// 0.05f//
+	if(sqrtf(dx*dx + dy*dy) < 0.05f)// 0.035f//
 	{
 		//Get new rotation, speed & point to go
 	    ReadMapLine(map);
@@ -220,7 +234,49 @@ void DriveOnMap(Map_t *map, motor_t *MotorLeft, motor_t *MotorRight)
 	motor_control(map->SetSpeed + (map->p * Error) - (map->d * ErrorDif), map->SetSpeed - (map->p * Error)+ (map->d * ErrorDif));
 
 }
+void SpeedUnMapping(Map_t *map, motor_t *MotorLeft, motor_t *MotorRight)
+{
+	map->AlhphaOri = 1; //100% IMU 0% encoders
 
+	//(3.1) -- Save XY
+	map->PreviousXri = map->Xri;
+	map->PreviousYri = map->Yri;
+
+	map->PreviousPci[0] = map->Pci[0];
+	map->PreviousPci[1] = map->Pci[1];
+
+	//(2.11) -- Translation In Measurement
+	float Ti = (MotorLeft->LpfDistanceInMeasurement + MotorRight->LpfDistanceInMeasurement) / 2;
+	//(2.12) -- Rotation In Measurement
+	float Ri = (MotorRight->LpfDistanceInMeasurement - MotorLeft->LpfDistanceInMeasurement) / (MAIN_PCB_LENGTH * 2 * 1.085);//1.085
+
+	//(2.13) -- Main PCB Position
+	map->Ori = map->Ori + (((1-map->AlhphaOri)*Ri) + (map->OriIMU * map->AlhphaOri));
+	map->Ori = normalize_angle(map->Ori);
+	map->Xri = map->Xri + ((Ti * cosf(map->Ori))/2);
+	map->Yri = map->Yri + ((Ti * sinf(map->Ori)))/2;
+
+
+	// How near to next point we are ?
+	float dx = map->SetX - map->Xri;
+	float dy = map->SetY - map->Yri;
+	if(sqrtf(dx*dx + dy*dy) < 0.045f)// 0.035f//
+	{
+		//Get new rotation, speed & point to go
+	    ReadMapLine(map);
+	    GRUZIK.Base_speed_L = map->SetSpeed;
+	    GRUZIK.Base_speed_R = map->SetSpeed;
+	    GRUZIK.Max_speed_L =  map->SetSpeed;
+	    GRUZIK.Max_speed_R =  map->SetSpeed;
+	}
+
+//	map->SetRotation = atan2f((map->SetY - map->Yri),(map->SetX - map->Xri));
+//
+//	//PID to get set rotation
+//	float Error = (normalize_angle(map->SetRotation - map->Ori)) * 1000.0; //In radians
+//
+//	map->ErrorSum += Error;
+}
 
 void MapUpdateV2(Map_t *map, motor_t *MotorLeft, motor_t *MotorRight)
 {

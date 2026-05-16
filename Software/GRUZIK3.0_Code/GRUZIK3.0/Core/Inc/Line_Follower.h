@@ -44,7 +44,7 @@ enum state
 	PidFollowing,
 	Mappig,
 	UnMapping,
-	Stop,
+	UnSpeedMapping,
 };
 
 #endif /* INC_LINE_FOLLOWER_H_ */

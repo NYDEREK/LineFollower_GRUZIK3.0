@@ -1,5 +1,6 @@
 ../Core/Src/map.c:29:6:MapUpdate	3
 ../Core/Src/map.c:79:7:normalize_angle	3
 ../Core/Src/map.c:85:13:ReadMapLine	11
-../Core/Src/map.c:170:6:DriveOnMap	4
-../Core/Src/map.c:225:6:MapUpdateV2	3
+../Core/Src/map.c:185:6:DriveOnMap	4
+../Core/Src/map.c:237:6:SpeedUnMapping	2
+../Core/Src/map.c:281:6:MapUpdateV2	3

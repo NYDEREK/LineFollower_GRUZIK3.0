@@ -289,7 +289,7 @@ void App_Controll(char RxData, LineFollower_t *LineFollower)
 //	    }
 //		FatFsResult = f_close(&SdCardFile);
 //		HAL_Delay(1000);
-		if(LineFollower->DrivingOnMap == 0)
+		if(LineFollower->state == Mappig)
 		{
 			FatFsResult = f_open(&SdCardFile, "GRUZIK.txt", FA_WRITE|FA_OPEN_APPEND);
 			map.Mapping = 1;

@@ -1,5 +1,6 @@
 ../Core/Src/map.c:29:6:MapUpdate	248	static
 ../Core/Src/map.c:79:7:normalize_angle	16	static
 ../Core/Src/map.c:85:13:ReadMapLine	64	static
-../Core/Src/map.c:170:6:DriveOnMap	64	static
-../Core/Src/map.c:225:6:MapUpdateV2	272	static
+../Core/Src/map.c:185:6:DriveOnMap	64	static
+../Core/Src/map.c:237:6:SpeedUnMapping	48	static
+../Core/Src/map.c:281:6:MapUpdateV2	272	static

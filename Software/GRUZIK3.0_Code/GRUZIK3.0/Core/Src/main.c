@@ -188,11 +188,11 @@ int main(void)
   	HAL_ADC_Start_DMA(&hadc1, (uint32_t*)&GRUZIK.Adc_Value, 1);
 
   	/*Initial values for driving on Optimized route*/
-  	map.p = 0.13;//0.14
+  	map.p = 0.11;//0.11
   	map.i = 0;
-  	map.d = 13;//14
+  	map.d = 11;//11
 
-  	GRUZIK.DrivingOnMap = 1;
+  	GRUZIK.state = PidFollowing;
 
 
   	/*Set initial values for PID*/
@@ -200,11 +200,11 @@ int main(void)
   	GRUZIK.Kd = 0.085;
   	GRUZIK.Speed_offset = 0.014;
 
-  	if(GRUZIK.DrivingOnMap)
+  	if(GRUZIK.state == UnMapping)
   	{
 		GRUZIK.Kp = map.p;
 		GRUZIK.Kd = map.d;
-		GRUZIK.Base_speed_R = map.i;
+		//GRUZIK.Base_speed_R = map.i;
   	}
 
   	GRUZIK.Base_speed_R = 80;
@@ -213,10 +213,10 @@ int main(void)
   	GRUZIK.Max_speed_L = 80;
 
   	/*Sharp turn speed*/
-  	GRUZIK.Sharp_bend_speed_right= -40;
-  	GRUZIK.Sharp_bend_speed_left= 85;
+  	GRUZIK.Sharp_bend_speed_right= -50;
+  	GRUZIK.Sharp_bend_speed_left= 100;
   	GRUZIK.Bend_speed_right= -50;
-  	GRUZIK.Bend_speed_left= 90;
+  	GRUZIK.Bend_speed_left= 100;
 
   	map.Kk = 0;
 
@@ -239,7 +239,7 @@ int main(void)
 
     /*SD Card file initialization*/
     FatFsResult = f_mount(&SdFatFs, "", 1);
-    if(GRUZIK.DrivingOnMap != 1)
+    if(GRUZIK.state == Mappig)
     {
     	while(!SDReadingReady)
     	{
@@ -250,7 +250,7 @@ int main(void)
     		}
     	}
     }
-    else
+    else if(GRUZIK.state != PidFollowing)
     {
     	while(!SDReadingReady)
     	{
@@ -293,10 +293,11 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-	  if(GRUZIK.DrivingOnMap == 0)
+	  if(GRUZIK.state != UnMapping)
 	  {
 		  PID_control();
 	  }
+
 
   }
   /* USER CODE END 3 */
@@ -392,21 +393,23 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	    Orientation += map.OriIMU / 0.01745329251f;
 
 		if(GRUZIK.blockinterrups == 0)
-		{															   // 0.001
-			if((GRUZIK.DrivingOnMap == 1)&&(SDReadingReady == 1))     // 0.0015
-			{                                                         // 0.00095
-			  map.OriIMU = (((myGyroScaled.z * YAW_MEASUREMENT_PERIOD) - 0.0015)* 0.01745329251f) * 1;//1.03325
+		{															   // 0.002 best
+			if((GRUZIK.state == UnMapping)&&(SDReadingReady == 1))     // 0.0015
+			{                                                         //-0.001
+			  map.OriIMU = (((myGyroScaled.z * YAW_MEASUREMENT_PERIOD) - 0.0025)* 0.01745329251f) * 1;//1.03325
 			  DriveOnMap(&map, &Motor_L, &Motor_R);
 			}
-			else if((GRUZIK.DrivingOnMap == 0)&&(SDReadingReady == 1))// + 0.00200
-			{                                                         // + 0.00125
-			  map.OriIMU = (((myGyroScaled.z * YAW_MEASUREMENT_PERIOD) + 0.004)* 0.01745329251f) * 1.2705f;//1.3325 // zwiększenie zamyka trase
-//			  MapUpdate(&map, &Motor_L, &Motor_R);                     //- 0.0065                    1.273
-
-				//map.OriIMU = ((myGyroScaled.z * YAW_MEASUREMENT_PERIOD) - 0.001)* 0.01745329251f;
-				MapUpdateV2(&map, &Motor_L, &Motor_R);
+			else if((GRUZIK.state == UnSpeedMapping)&&(SDReadingReady == 1))     // 0.0015
+			{                                                         //+0.002
+			  map.OriIMU = (((myGyroScaled.z * YAW_MEASUREMENT_PERIOD) - 0.001)* 0.01745329251f) * 1;//1.03325
+			  SpeedUnMapping(&map, &Motor_L, &Motor_R);
 			}
-		}
+			else if((GRUZIK.state == Mappig)&&(SDReadingReady == 1))// + 0.00200
+			{                                                         // + 0.00125
+			  map.OriIMU = (((myGyroScaled.z * YAW_MEASUREMENT_PERIOD) - 0.0025)* 0.01745329251f) * 1.2961f;//1.3325 // zwiększenie zamyka trase
+			  MapUpdateV2(&map, &Motor_L, &Motor_R);                  //-0.001                   1.285
+			}														  //-0.000075                 1.296 narazie best
+		}															// rzeszow -0.003 i 1.296
 
 		  /*If there is a message form Bluetooth Parser it*/
 		  if(ReceivedLines > 0)
@@ -416,15 +419,29 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
 			  ReceivedLines--;
 		  }
-		  /*After one cycle of un-mapping drive slowly with route for 2s and then stop*/
+		  /*After one cycle of un-mapping drive with route*/
 		  if(GRUZIK.UnMappingDone == 1)
 		  {
-			  if(HAL_GetTick() >= (GRUZIK.DoneUnMappingTimer + 1750))
-			  {
-					HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, GPIO_PIN_RESET);
-					HAL_GPIO_WritePin(GPIOC, GPIO_PIN_5, GPIO_PIN_RESET);
-					HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, GPIO_PIN_RESET);
-			  }
+			  GRUZIK.Kp = 0.015;
+			  GRUZIK.Kd = 0.085;
+			  GRUZIK.Base_speed_R = 95;
+			  GRUZIK.Base_speed_L = 95;
+			  GRUZIK.Max_speed_R = 165;
+			  GRUZIK.Max_speed_L = 165;
+
+			  /*Sharp turn speed*/
+			  GRUZIK.Sharp_bend_speed_right= -45;
+			  GRUZIK.Sharp_bend_speed_left= 90;
+			  GRUZIK.Bend_speed_right= -55;
+			  GRUZIK.Bend_speed_left= 105;
+
+			  GRUZIK.state = PidFollowing;
+//			  if(HAL_GetTick() >= (GRUZIK.DoneUnMappingTimer + 1750))
+//			  {
+//					HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, GPIO_PIN_RESET);
+//					HAL_GPIO_WritePin(GPIOC, GPIO_PIN_5, GPIO_PIN_RESET);
+//					HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, GPIO_PIN_RESET);
+//			  }
 		  }
 	}
 }
