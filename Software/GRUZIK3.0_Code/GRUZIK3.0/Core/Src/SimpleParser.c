@@ -24,6 +24,7 @@ extern FRESULT FatFsResult;
 extern FATFS SdFatFs;
 extern FIL SdCardFile;
 extern uint8_t SDReadingReady;
+extern uint8_t RxData;
 extern Map_t map;
 
 volatile uint8_t TelemetryMode = TELEMETRY_OFF;
@@ -35,6 +36,9 @@ static uint16_t MapUploadPointCount = 0u;
 static uint16_t MapUploadExpectedCount = 0u;
 static float TireCleanSpeed = 170.0f;
 static uint32_t ManualDriveLastTick = 0u;
+
+static void SendFatFsError(const char *prefix, const char *operation, const char *file_name, FRESULT result);
+static uint8_t SdEnsureMounted(const char *context);
 
 static void UartSend(const char *text)
 {
@@ -71,6 +75,255 @@ static uint8_t ParseFloatValue(float *out)
 
 	*out = strtof(parse_pointer, NULL);
 	return 1u;
+}
+
+static void TrimText(char *text)
+{
+	size_t len = strlen(text);
+	while((len > 0u) && ((text[len - 1u] == ' ') || (text[len - 1u] == '\t') ||
+						 (text[len - 1u] == '\r') || (text[len - 1u] == '\n')))
+	{
+		text[len - 1u] = '\0';
+		len--;
+	}
+
+	char *start = text;
+	while((*start == ' ') || (*start == '\t'))
+	{
+		start++;
+	}
+
+	if(start != text)
+	{
+		memmove(text, start, strlen(start) + 1u);
+	}
+}
+
+static uint8_t BluetoothNameIsValid(const char *name)
+{
+	size_t len = strlen(name);
+	if((len == 0u) || (len > ROBOT_BT_NAME_MAX_LEN))
+	{
+		return 0u;
+	}
+
+	for(size_t i = 0u; i < len; i++)
+	{
+		char c = name[i];
+		uint8_t allowed = (((c >= 'A') && (c <= 'Z')) ||
+						   ((c >= 'a') && (c <= 'z')) ||
+						   ((c >= '0') && (c <= '9')) ||
+						   (c == ' ') || (c == '_') || (c == '-') || (c == '.'));
+		if(allowed == 0u)
+		{
+			return 0u;
+		}
+	}
+
+	return 1u;
+}
+
+static uint8_t ReadBluetoothNameArgument(char *name, size_t name_size)
+{
+	char *value = strtok(NULL, "\r\n");
+	if(value == NULL)
+	{
+		UartSend("BT_NAME_ERROR,empty\r\n");
+		return 0u;
+	}
+
+	snprintf(name, name_size, "%s", value);
+	TrimText(name);
+	if(BluetoothNameIsValid(name) == 0u)
+	{
+		UartSend("BT_NAME_ERROR,bad_name\r\n");
+		return 0u;
+	}
+
+	return 1u;
+}
+
+static uint8_t BluetoothPendingNameWrite(const char *name)
+{
+	if(SdEnsureMounted(ROBOT_BT_NAME_FILE) == 0u)
+	{
+		return 0u;
+	}
+
+	FIL file;
+	FatFsResult = f_open(&file, ROBOT_BT_NAME_FILE, FA_WRITE | FA_CREATE_ALWAYS);
+	if(FatFsResult != FR_OK)
+	{
+		SendFatFsError("BT_NAME_ERROR", "open_write", ROBOT_BT_NAME_FILE, FatFsResult);
+		return 0u;
+	}
+
+	UINT written = 0u;
+	FatFsResult = f_write(&file, name, (UINT)strlen(name), &written);
+	if(FatFsResult == FR_OK)
+	{
+		UINT newline_written = 0u;
+		FatFsResult = f_write(&file, "\n", 1u, &newline_written);
+	}
+	f_close(&file);
+
+	if((FatFsResult != FR_OK) || (written != strlen(name)))
+	{
+		SendFatFsError("BT_NAME_ERROR", "write", ROBOT_BT_NAME_FILE, FatFsResult);
+		return 0u;
+	}
+
+	return 1u;
+}
+
+static uint8_t BluetoothPendingNameRead(char *name, size_t name_size)
+{
+	if(SDReadingReady == 0u)
+	{
+		return 0u;
+	}
+
+	if(SdEnsureMounted(ROBOT_BT_NAME_FILE) == 0u)
+	{
+		return 0u;
+	}
+
+	FIL file;
+	FatFsResult = f_open(&file, ROBOT_BT_NAME_FILE, FA_READ);
+	if(FatFsResult == FR_NO_FILE)
+	{
+		return 0u;
+	}
+	if(FatFsResult != FR_OK)
+	{
+		SendFatFsError("BT_NAME_ERROR", "open_read", ROBOT_BT_NAME_FILE, FatFsResult);
+		return 0u;
+	}
+
+	UINT bytes_read = 0u;
+	char buffer[ROBOT_BT_NAME_MAX_LEN + 8u];
+	FatFsResult = f_read(&file, buffer, sizeof(buffer) - 1u, &bytes_read);
+	f_close(&file);
+	if(FatFsResult != FR_OK)
+	{
+		SendFatFsError("BT_NAME_ERROR", "read", ROBOT_BT_NAME_FILE, FatFsResult);
+		return 0u;
+	}
+
+	buffer[bytes_read] = '\0';
+	TrimText(buffer);
+	if(BluetoothNameIsValid(buffer) == 0u)
+	{
+		UartSend("BT_NAME_ERROR,pending_bad_name\r\n");
+		return 0u;
+	}
+
+	snprintf(name, name_size, "%s", buffer);
+	return 1u;
+}
+
+static uint8_t BluetoothSetBaud(uint32_t baud)
+{
+	if(hlpuart1.Init.BaudRate == baud)
+	{
+		return 1u;
+	}
+
+	(void)HAL_UART_DeInit(&hlpuart1);
+	hlpuart1.Init.BaudRate = baud;
+	return (HAL_UART_Init(&hlpuart1) == HAL_OK) ? 1u : 0u;
+}
+
+static uint8_t BluetoothResponseOk(const char *response)
+{
+	return ((strstr(response, "OK") != NULL) ||
+			(strstr(response, "Ok") != NULL) ||
+			(strstr(response, "ok") != NULL)) ? 1u : 0u;
+}
+
+static uint8_t BluetoothSendAtCommand(const char *command, char *response, size_t response_size)
+{
+	memset(response, 0, response_size);
+	(void)HAL_UART_Transmit(&hlpuart1, (uint8_t *)command, (uint16_t)strlen(command), 300);
+
+	uint32_t start_ms = HAL_GetTick();
+	size_t used = 0u;
+	while(((HAL_GetTick() - start_ms) < ROBOT_BT_AT_TIMEOUT_MS) && (used < (response_size - 1u)))
+	{
+		uint8_t byte = 0u;
+		if(HAL_UART_Receive(&hlpuart1, &byte, 1u, 10u) == HAL_OK)
+		{
+			response[used++] = (char)byte;
+			response[used] = '\0';
+			if((BluetoothResponseOk(response) != 0u) || (strstr(response, "ERROR") != NULL))
+			{
+				break;
+			}
+		}
+	}
+
+	return BluetoothResponseOk(response);
+}
+
+static uint8_t BluetoothTryRenameAtBaud(uint32_t baud, const char *name)
+{
+	char response[96];
+	char command[48];
+
+	if(BluetoothSetBaud(baud) == 0u)
+	{
+		return 0u;
+	}
+	HAL_Delay(80u);
+
+	if((BluetoothSendAtCommand("AT\r\n", response, sizeof(response)) == 0u) &&
+	   (BluetoothSendAtCommand("AT", response, sizeof(response)) == 0u))
+	{
+		return 0u;
+	}
+
+	snprintf(command, sizeof(command), "AT+NAME=%s\r\n", name);
+	if(BluetoothSendAtCommand(command, response, sizeof(response)) != 0u)
+	{
+		return 1u;
+	}
+
+	snprintf(command, sizeof(command), "AT+NAME%s\r\n", name);
+	if(BluetoothSendAtCommand(command, response, sizeof(response)) != 0u)
+	{
+		return 1u;
+	}
+
+	snprintf(command, sizeof(command), "AT+NAME%s", name);
+	return BluetoothSendAtCommand(command, response, sizeof(response));
+}
+
+static uint8_t BluetoothApplyName(const char *name, uint32_t *used_baud)
+{
+	uint8_t ok = 0u;
+
+	(void)HAL_UART_AbortReceive_IT(&hlpuart1);
+	HAL_Delay(20u);
+
+	ok = BluetoothTryRenameAtBaud(ROBOT_BT_AT_BAUD_PRIMARY, name);
+	if(ok == 0u)
+	{
+		ok = BluetoothTryRenameAtBaud(ROBOT_BT_AT_BAUD_SECONDARY, name);
+		if(ok != 0u)
+		{
+			*used_baud = ROBOT_BT_AT_BAUD_SECONDARY;
+		}
+	}
+	else
+	{
+		*used_baud = ROBOT_BT_AT_BAUD_PRIMARY;
+	}
+
+	(void)BluetoothSetBaud(ROBOT_BT_DATA_BAUD);
+	HAL_Delay(20u);
+	(void)HAL_UART_Receive_IT(&hlpuart1, &RxData, 1u);
+
+	return ok;
 }
 
 static float ClampFloat(float value, float min_value, float max_value)
@@ -755,6 +1008,90 @@ void Parser_ServiceManualDriveTimeout(LineFollower_t *LF)
 	(void)LF;
 }
 
+uint8_t Parser_ServicePendingBluetoothName(void)
+{
+	char name[ROBOT_BT_NAME_MAX_LEN + 1u];
+	uint32_t baud = 0u;
+
+	if(BluetoothPendingNameRead(name, sizeof(name)) == 0u)
+	{
+		return 0u;
+	}
+
+	if(BluetoothApplyName(name, &baud) != 0u)
+	{
+		(void)f_unlink(ROBOT_BT_NAME_FILE);
+		char tx[72];
+		snprintf(tx, sizeof(tx), "BT_NAME_OK,%s,%lu\r\n", name, (unsigned long)baud);
+		UartSend(tx);
+		return 1u;
+	}
+
+	UartSend("BT_NAME_ERROR,at_no_response\r\n");
+	return 0u;
+}
+
+static void Bluetooth_name_store(void)
+{
+	char name[ROBOT_BT_NAME_MAX_LEN + 1u];
+	if(ReadBluetoothNameArgument(name, sizeof(name)) == 0u)
+	{
+		return;
+	}
+
+	if(BluetoothPendingNameWrite(name) != 0u)
+	{
+		char tx[72];
+		snprintf(tx, sizeof(tx), "BT_NAME_PENDING,%s\r\n", name);
+		UartSend(tx);
+	}
+}
+
+static void Bluetooth_name_now(LineFollower_t *LF)
+{
+	char name[ROBOT_BT_NAME_MAX_LEN + 1u];
+	uint32_t baud = 0u;
+
+	if(LF->PowerMode == Start)
+	{
+		UartSend("BT_NAME_ERROR,stop_robot_first\r\n");
+		return;
+	}
+
+	if(ReadBluetoothNameArgument(name, sizeof(name)) == 0u)
+	{
+		return;
+	}
+
+	if(SdFileOpen != 0u)
+	{
+		f_close(&SdCardFile);
+		SdFileOpen = 0u;
+	}
+
+	LF->LineFollowing = 0u;
+	LF->PowerMode = Stop;
+	map.Mapping = 0u;
+	map.PlaybackActive = 0u;
+	TelemetryMode = TELEMETRY_OFF;
+	TireCleaningActive = 0u;
+	ManualDriveActive = 0u;
+	motor_control(0.0, 0.0);
+	HAL_GPIO_WritePin(Motor_STBY_GPIO_Port, Motor_STBY_Pin, GPIO_PIN_RESET);
+
+	if(BluetoothApplyName(name, &baud) != 0u)
+	{
+		(void)f_unlink(ROBOT_BT_NAME_FILE);
+		char tx[72];
+		snprintf(tx, sizeof(tx), "BT_NAME_OK,%s,%lu\r\n", name, (unsigned long)baud);
+		UartSend(tx);
+	}
+	else
+	{
+		UartSend("BT_NAME_ERROR,at_no_response\r\n");
+	}
+}
+
 void Parser_FinishMappingAutoClosed(LineFollower_t *LF)
 {
 	LF->LineFollowing = 0u;
@@ -1067,6 +1404,16 @@ void Parser_Parse(uint8_t *ReceivedData, LineFollower_t *LineFollower)
 	{
 		TelemetryMode = TELEMETRY_DEBUG;
 		UartSend("TELEMETRY,debug\r\n");
+	}
+	else if((!strcmp("BtName", parse_pointer)) || (!strcmp("BTName", parse_pointer)) ||
+			(!strcmp("BluetoothName", parse_pointer)))
+	{
+		Bluetooth_name_store();
+	}
+	else if((!strcmp("BtNameNow", parse_pointer)) || (!strcmp("BTNameNow", parse_pointer)) ||
+			(!strcmp("BluetoothNameNow", parse_pointer)))
+	{
+		Bluetooth_name_now(LineFollower);
 	}
 	else if(!strcmp("MapDump", parse_pointer))
 	{

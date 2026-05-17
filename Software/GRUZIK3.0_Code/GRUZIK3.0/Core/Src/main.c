@@ -116,6 +116,12 @@
 	int ARR = 4;
 	int actives = 0;
 	uint32_t LastEndTimer;
+	static uint8_t LineGapBridgeActive = 0u;
+	static uint8_t LineGapBridgeAllowed = 0u;
+	static uint32_t LineGapBridgeStartMs = 0u;
+	static int LastLineMotorRight = 0;
+	static int LastLineMotorLeft = 0;
+	static int LastValidLineError = 0;
 
 	/*Communication*/
     char buffer[28];
@@ -150,6 +156,7 @@ static void LineSensorDelayUs(uint32_t delay_us);
 static void LineSensorSetInput(void);
 static void LineSensorSetOutputHigh(void);
 static uint8_t LineSensorIsActive(GPIO_PinState state);
+static uint8_t LineSensorTouchesGapEdgeGuard(void);
 void Robot_ResetOdometry(void);
 /* USER CODE END PFP */
 
@@ -258,6 +265,7 @@ int main(void)
     /*SD Card mount check. Files are opened by parser commands when needed. */
     FatFsResult = f_mount(&SdFatFs, "", 1);
     SDReadingReady = (FatFsResult == FR_OK) ? 1u : 0u;
+    (void)Parser_ServicePendingBluetoothName();
 	/*Start timers and PWM on channels*/
 	HAL_TIM_Base_Start_IT(&htim3);
 	HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);//right pwm
@@ -430,6 +438,9 @@ void Robot_ResetOdometry(void)
 
 static void Robot_StopOutputs(void)
 {
+	LineGapBridgeActive = 0u;
+	LineGapBridgeAllowed = 0u;
+	LineGapBridgeStartMs = 0u;
 	motor_control(0.0, 0.0);
 	HAL_GPIO_WritePin(Motor_STBY_GPIO_Port, Motor_STBY_Pin, GPIO_PIN_RESET);
 }
@@ -561,8 +572,9 @@ static void Robot_SendOdomTelemetry(void)
 static void Robot_SendDebugTelemetry(void)
 {
 	char tx[256];
+	uint32_t gap_ms = (LineGapBridgeActive != 0u) ? (HAL_GetTick() - LineGapBridgeStartMs) : 0u;
 	int len = snprintf(tx, sizeof(tx),
-					   "DBG,%d,%d,%d,%ld,%ld,%.1f,%.1f,%.4f,%.4f,%.2f,%.2f,%.2f,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u\r\n",
+					   "DBG,%d,%d,%d,%ld,%ld,%.1f,%.1f,%.4f,%.4f,%.2f,%.2f,%.2f,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%lu\r\n",
 					   GRUZIK.SensorPosition,
 					   GRUZIK.actives,
 					   GRUZIK.Last_end,
@@ -586,7 +598,9 @@ static void Robot_SendDebugTelemetry(void)
 					   GRUZIK.SensorValues[8],
 					   GRUZIK.SensorValues[9],
 					   GRUZIK.SensorValues[10],
-					   GRUZIK.SensorValues[11]);
+					   GRUZIK.SensorValues[11],
+					   LineGapBridgeActive,
+					   (unsigned long)gap_ms);
 
 	if((len > 0) && (len < (int)sizeof(tx)))
 	{
@@ -683,6 +697,25 @@ static uint8_t LineSensorIsActive(GPIO_PinState state)
 #else
 	return (state == GPIO_PIN_RESET) ? 1u : 0u;
 #endif
+}
+
+static uint8_t LineSensorTouchesGapEdgeGuard(void)
+{
+	uint8_t guard_sensors = ROBOT_LINE_GAP_EDGE_GUARD_SENSORS;
+	if(guard_sensors > 6u)
+	{
+		guard_sensors = 6u;
+	}
+
+	for(uint8_t i = 0u; i < guard_sensors; i++)
+	{
+		if((GRUZIK.SensorValues[i] != 0u) || (GRUZIK.SensorValues[11u - i] != 0u))
+		{
+			return 1u;
+		}
+	}
+
+	return 0u;
 }
 
 void motor_control (double pos_right, double pos_left)
@@ -884,6 +917,42 @@ int errors_sum (int index, int abs)
 void PID_control()
 {
   uint16_t position = QTR8_read();
+
+#if ROBOT_LINE_GAP_ENABLE
+  if(actives == 0)
+  {
+    uint32_t now = HAL_GetTick();
+
+    if(LineGapBridgeActive == 0u)
+    {
+      if(LineGapBridgeAllowed != 0u)
+      {
+        LineGapBridgeActive = 1u;
+        LineGapBridgeStartMs = now;
+      }
+      else
+      {
+        sharp_turn();
+        return;
+      }
+    }
+
+    if((now - LineGapBridgeStartMs) <= ROBOT_LINE_GAP_MAX_MS)
+    {
+      motor_control(LastLineMotorRight, LastLineMotorLeft);
+      return;
+    }
+
+    LineGapBridgeActive = 0u;
+    LineGapBridgeAllowed = 0u;
+    sharp_turn();
+    return;
+  }
+
+  LineGapBridgeActive = 0u;
+  LineGapBridgeStartMs = 0u;
+#endif
+
   int error = (6500 * SENSOR_SCALE) - position;
   past_errors(error);
 
@@ -907,6 +976,20 @@ void PID_control()
     motorspeedl = GRUZIK.Max_speed_L;
   if (motorspeedr > GRUZIK.Max_speed_R)
     motorspeedr = GRUZIK.Max_speed_R;
+
+#if ROBOT_LINE_GAP_ENABLE
+  LastValidLineError = error;
+  LastLineMotorRight = motorspeedr;
+  LastLineMotorLeft = motorspeedl;
+  if((abs(error) <= ROBOT_LINE_GAP_CENTER_ERROR) && (LineSensorTouchesGapEdgeGuard() == 0u))
+  {
+    LineGapBridgeAllowed = 1u;
+  }
+  else
+  {
+    LineGapBridgeAllowed = 0u;
+  }
+#endif
 
 	forward_brake(motorspeedr, motorspeedl);
 }

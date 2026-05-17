@@ -33,5 +33,6 @@ void Parser_Parse(uint8_t *ReceivedData, LineFollower_t *LineFollower);
 void App_Controll(char RxData, LineFollower_t *LineFollower);
 void Parser_FinishMappingAutoClosed(LineFollower_t *LineFollower);
 void Parser_ServiceManualDriveTimeout(LineFollower_t *LineFollower);
+uint8_t Parser_ServicePendingBluetoothName(void);
 
 #endif /* INC_SIMPLEPARSER_H_ */

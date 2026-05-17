@@ -52,6 +52,13 @@
 #define ROBOT_MAP_OUTPUT_FILE               "GRUZIK.txt"
 #define ROBOT_MAP_INPUT_FILE                "map.txt"
 
+#define ROBOT_BT_DATA_BAUD                  9600u
+#define ROBOT_BT_AT_BAUD_PRIMARY            9600u
+#define ROBOT_BT_AT_BAUD_SECONDARY          38400u
+#define ROBOT_BT_AT_TIMEOUT_MS              220u
+#define ROBOT_BT_NAME_FILE                  "btname.txt"
+#define ROBOT_BT_NAME_MAX_LEN               20u
+
 #define ROBOT_TELEMETRY_PERIOD_MS           100u
 #define ROBOT_MANUAL_TIMEOUT_MS             350u
 #define ROBOT_LINE_CONTROL_PERIOD_MS        5u
@@ -61,6 +68,10 @@
 #define ROBOT_LINE_SENSOR_MIN_THRESHOLD_US  50u
 #define ROBOT_LINE_SENSOR_MAX_THRESHOLD_US  10000u
 #define ROBOT_LINE_SENSOR_ACTIVE_HIGH       1u
+#define ROBOT_LINE_GAP_ENABLE              1u
+#define ROBOT_LINE_GAP_MAX_MS              4000u
+#define ROBOT_LINE_GAP_CENTER_ERROR        2500
+#define ROBOT_LINE_GAP_EDGE_GUARD_SENSORS  2u
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846f
